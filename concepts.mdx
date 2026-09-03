@@ -1,0 +1,100 @@
+---
+title: "Key concepts"
+description: "Client → Market → Pool → User and quote vs write"
+---
+
+Client factories, where data comes from, and which methods quote vs submit.
+
+## Layers
+
+| Layer | How you get it | Role |
+| ----- | -------------- | ---- |
+| **Client** | `new VoizMarketsClient(…)` or `useVoiz().client` | Core of the SDK — addresses plus factories for everything else |
+| **Market** | `client.market(address)` | Status, seed, resolve / merge, add liquidity |
+| **Pool** | `client.pool(outcomeToken)` | Pool state, quote trades, swap |
+| **User** | `client.user(address)` | Trades, share positions, LP |
+
+Prefer these factories over constructing market/pool/user classes yourself (they are not root package exports).
+
+```ts
+const client = useVoiz().client // or new VoizMarketsClient({ … })
+
+const market = client.market(addr)
+const pool = client.pool(outcomeToken)
+const user = client.user(owner)
+```
+
+## MarketSummary
+
+`MarketSummary` is what you use for catalog and detail pages.
+
+```ts
+const { markets, source, usedFallback } = await client.listMarkets()
+const detail = await client.market(addr).summary()
+```
+
+It includes name, outcomes, resolver metadata, resolution state, `wrappedTokens` (outcomes + Invalid), optional indexer `outcomeStats`, and image fields.
+
+For display, prefer `listMarkets`, `summary`, and `prices`. Write helpers (`resolve`, `seed`, LP) load on-chain state privately when needed.
+
+## Collateral and outcomes
+
+Each market has:
+
+- One **collateral** ERC-20 (`client.addresses.collateral`, also via `getAddresses(chainId)`)
+- Several **outcome** wrapped ERC-20s (`wrappedTokens[0..numOutcomes-1]`)
+- An **Invalid** token at the end of `wrappedTokens`
+
+Trades and pool quotes are always against one outcome token ↔ collateral. Seeding and across-outcome LP split a complete set once, then act per outcome.
+
+Use `erc20Abi` from `@voiz/markets-sdk` when you need approve / allowance / balanceOf outside the high-level paths.
+
+## Indexer vs RPC
+
+| Path | Source | Use for |
+| ---- | ------ | ------- |
+| `listMarkets`, `market.summary`, `prices`, `metrics`, `user.*` | **Indexer** first (Ponder), RPC fallback | Catalog, charts, portfolio |
+| `pool.quoteTrade`, `pool.swap`, `market.seed`, live pool reads | **RPC** | Sizing and submitting txs |
+
+`listMarkets` returns `{ markets, source: "indexer" \| "rpc", usedFallback }`. Soft failures on indexer reads should drive empty UI states, not block trading.
+
+<Tip>
+  Display prices can be slightly stale (~indexer cadence). Trade quotes must stay live via `pool.quoteTrade`.
+</Tip>
+
+## Quote vs write: seed
+
+| | |
+| - | - |
+| **`quoteSeed({ seedWei, oddsBps })`** | Pure math — collateral totals before the market exists. Pair with `normalizeOddsBps`. |
+| **`market.seed({ outcomeTokens, seedWei, oddsBps, owner })`** | Sole public seed **write**. Split once, then one batch per outcome. |
+
+There is no `client.seedMarket`. Preview with `quoteSeed`, then send with `market.seed`.
+
+## Quote vs write: trade
+
+| | |
+| - | - |
+| **`pool.quoteTrade({ side, amountIn })`** | Exact-in quote (`QuoteTradeResult`). May cap size (`withinRange: false`, `maxAmountIn`). |
+| **`pool.swap({ side, amountIn, minAmountOut, user })`** | Exact-in swap via the swap helper + your injected sender. |
+
+`side: "buy"` is collateral → outcome; `"sell"` is the reverse. Apply your own slippage to `minAmountOut` from the quote.
+
+## Liquidity
+
+Primary LP path is **`market.addLiquidity`** (split once, equal collateral share per outcome). Prefer it over any single-outcome LP helpers.
+
+## Writes and sendCalls
+
+`VoizProvider` (or `ClientConfig`) injects `sendCalls` or a `walletClient`. High-level methods encode and submit for you.
+
+- Custom `sendCalls` — typical for Privy / AA; may receive `{ requiredSigner }` on admin-gated writes (e.g. resolve).
+- Default wallet path — sequential `sendTransaction` when only `walletClient` is set.
+
+Keep UI on `client` / `market` / `pool` methods. Inject `sendCalls` (or a `walletClient`) and let those methods submit for you.
+
+## Related
+
+- [React quickstart](/quickstart-react)
+- [Vanilla viem quickstart](/quickstart-viem)
+- API: [Client](/api/client), [Market](/api/market), [Pool](/api/pool), [User](/api/user), [React](/api/react), [Helpers](/api/helpers)

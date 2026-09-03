@@ -1,0 +1,263 @@
+---
+title: "Market"
+description: "VoizMarket via client.market(addr) — summary, display, seed, resolve, LP"
+---
+
+Obtain with `client.market(address)`. The `VoizMarket` class is **not** root-exported from `@voiz/markets-sdk`. Prefer `summary` / display helpers for UI. Sole public seed write is `seed`. Primary LP path is `addLiquidity`.
+
+```ts
+const market = client.market(address)
+```
+
+Private helpers (`load`, `summaryFromRpc`, `outcomePrices`) power the public reads below — not part of the app-facing API.
+
+## Reads
+
+### summary
+
+Detail `MarketSummary` DTO: ponder-first, then RPC. Canonical for FE.
+
+```ts
+const summary = await market.summary()
+// or market.summary({ rpcOnly: true })
+// or market.summary({ requireFactory: false })
+```
+
+```ts
+// returns
+Promise<{
+  address: Address
+  marketName: string
+  outcomes: string[]
+  resolver: Address
+  resolverKind: "admin" | "committee"
+  marketAdmin: Address
+  threshold: number | null
+  resolutionMode: number
+  conditionId: `0x${string}`
+  resolved: boolean
+  winningOutcome: number | null
+  wrappedTokens: Address[]
+  numOutcomes: number
+  imageUri: string | null
+  outcomeImageUris: (string | null)[]
+  outcomeStats?: Array<{
+    index: number
+    impliedPct: number | null
+    liquidityCollateral: bigint | null
+    volumeCollateral: bigint | null
+  }>
+} | null>
+```
+
+`rpcOnly: true` skips Ponder and reads chain only. `requireFactory` (default `true` on the RPC path) returns `null` when the address is not in the live factory list.
+
+### priceHistory
+
+Windowed price history from the indexer (`from` = unix seconds). Soft-fails to `[]`.
+
+```ts
+const points = await market.priceHistory({ from: Math.floor(Date.now() / 1000) - 86400 })
+```
+
+```ts
+// returns
+Promise<Array<{
+  outcomeIndex: number
+  priceCt: number
+  impliedPct: number | null
+  timestamp: string
+  source: string
+}>>
+```
+
+### prices
+
+Display prices — indexer snapshots (~30s) with live `slot0` fallback. Not for trade quotes (use `pool.quoteTrade`).
+
+```ts
+const { rows, source } = await market.prices()
+```
+
+```ts
+// returns
+Promise<{
+  rows: Array<{
+    index: number
+    label: string
+    token: Address
+    priceCt: number | null
+    impliedPct: number | null
+  }>
+  source: "indexer" | "rpc"
+}>
+```
+
+Optional params: `outcomes`, `wrappedTokens`, `numOutcomes`, `resolved`, `winningOutcome` — omit to load from the market snapshot.
+
+### metrics
+
+Liquidity + volume per outcome — indexer `outcome` table with live collateral-reserve fallback.
+
+```ts
+const { rows, source } = await market.metrics()
+```
+
+```ts
+// returns
+Promise<{
+  rows: Array<{
+    index: number
+    liquidity: bigint | null
+    volumeCollateral: bigint | null
+  }>
+  source: "indexer" | "rpc"
+}>
+```
+
+Optional params: `wrappedTokens`, `numOutcomes`.
+
+### seedStatus
+
+Real outcome tokens only (not Invalid). `"none" | "partial" | "seeded"`.
+
+```ts
+const status = await market.seedStatus()
+```
+
+```ts
+// returns
+Promise<"none" | "partial" | "seeded">
+```
+
+Pass `outcomeTokens` to skip the snapshot load (real outcomes only).
+
+### canResolve
+
+Whether `user` can resolve: admin → `user === marketAdmin`; committee → `MultisigOracle.isVoter(user)`.
+
+```ts
+const ok = await market.canResolve(user)
+```
+
+```ts
+// returns
+Promise<boolean>
+```
+
+## Writes
+
+### seed
+
+Sole public seed write: split once, then one send per outcome batch. `marketAddress` comes from this instance.
+
+```ts
+const result = await market.seed({
+  outcomeTokens: summary.wrappedTokens.slice(0, summary.numOutcomes),
+  seedWei,
+  oddsBps,
+  owner,
+})
+```
+
+```ts
+// returns
+Promise<{
+  plan: {
+    splitAmount: bigint
+    poolCollateral: bigint
+    totalCollateral: bigint
+    legs: Array<{
+      index: number
+      priceBps: bigint
+      sqrtPriceX96: bigint
+      outcomeAmount: bigint
+      collateralAmount: bigint
+      token0: Address
+      token1: Address
+      amount0: bigint
+      amount1: bigint
+    }>
+  }
+  splitResult: unknown
+  outcomeResults: unknown[]
+  splitHashes: Hash[]
+  outcomeHashes: Hash[][]
+}>
+```
+
+`splitResult` / `outcomeResults` are opaque sender results. Also accepts `forceApprovals?: boolean`.
+
+### resolve
+
+Resolve via the client sender. Admin markets auto-pass `marketAdmin` as `requiredSigner` unless overridden.
+
+```ts
+const result = await market.resolve({ outcomeIndex: 0 })
+```
+
+```ts
+// returns
+Promise<unknown>
+```
+
+Opaque sender result. Optional `requiredSigner?: Address`.
+
+### merge
+
+Merge complete sets back to collateral.
+
+```ts
+const result = await market.merge({ amount, owner })
+```
+
+```ts
+// returns
+Promise<unknown>
+```
+
+Opaque sender result. Optional `forceApprovals?: boolean`, `wrappedTokens?: Address[]`.
+
+### addLiquidity
+
+Primary LP path: mint shares once, then provide into each open outcome pool.
+
+```ts
+const result = await market.addLiquidity({
+  credits,
+  owner,
+})
+```
+
+```ts
+// returns
+Promise<{
+  splitAmount: bigint
+  pairCollateral: bigint
+  shareCollateral: bigint
+  splitResult: unknown
+  outcomeResults: Array<{ index: number; result: unknown } | null>
+}>
+```
+
+Also accepts `outcomeTokens`, `outcomeLabels`, `forceApprovals`, `skipUninitialized`, `getSqrtPriceX96`, `setProgress`, `continueOnError`, `onOutcomeError`. `splitResult` / per-outcome `result` stay opaque.
+
+## Related types
+
+### ResolveParams
+
+```ts
+type ResolveParams = { outcomeIndex: number }
+```
+
+### MergeParams
+
+```ts
+type MergeParams = {
+  amount: bigint
+  owner: Address
+  forceApprovals?: boolean
+  wrappedTokens?: Address[]
+}
+```
+

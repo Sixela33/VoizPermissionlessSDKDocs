@@ -1,0 +1,133 @@
+---
+title: "Quickstart: vanilla viem"
+description: "VoizMarketsClient without React"
+---
+
+Use `@voiz/markets-sdk` with plain viem — scripts, backends, or non-React frontends.
+
+## Install
+
+```bash
+npm install @voiz/markets-sdk viem
+```
+
+## Create a client
+
+```ts
+import { VoizMarketsClient, getAddresses } from '@voiz/markets-sdk'
+import { createPublicClient, createWalletClient, http } from 'viem'
+import { privateKeyToAccount } from 'viem/accounts'
+import { baseSepolia } from 'viem/chains'
+
+const chainId = baseSepolia.id
+const publicClient = createPublicClient({
+  chain: baseSepolia,
+  transport: http(),
+})
+
+const account = privateKeyToAccount(process.env.PRIVATE_KEY as `0x${string}`)
+const walletClient = createWalletClient({
+  account,
+  chain: baseSepolia,
+  transport: http(),
+})
+
+const client = new VoizMarketsClient({
+  chainId,
+  publicClient,
+  walletClient,
+  // sendCalls,              // optional AA / custom batch sender
+  // addresses: getAddresses(chainId, { /* overrides */ }),
+})
+```
+
+Provide either `walletClient` (sequential txs) or `sendCalls` (Privy / account abstraction batch). High-level methods use whichever you inject — call `market.seed`, `pool.swap`, and similar; do not submit batches from app code yourself.
+
+`getAddresses(chainId)` resolves the known address map. Pass `addresses` overrides when you redeploy.
+
+## List markets
+
+```ts
+const { markets, source, usedFallback } = await client.listMarkets()
+
+for (const m of markets) {
+  console.log(m.marketName, m.address, m.resolved, m.wrappedTokens.length)
+}
+```
+
+`markets` is `MarketSummary[]` — the shape for catalog and detail (Ponder first, RPC fallback via `source` / `usedFallback`).
+
+## Seed a market
+
+The only public seed **write** is `market.seed`. Preview collateral with `quoteSeed` first:
+
+```ts
+import { normalizeOddsBps, quoteSeed } from '@voiz/markets-sdk'
+
+const oddsBps = normalizeOddsBps([50, 50]) // → bigints summing to 10_000
+const seedWei = 10n ** 18n
+const totals = quoteSeed({ seedWei, oddsBps })
+// totals.totalCollateral, .splitAmount, .poolCollateral
+
+const market = client.market(marketAddress)
+const summary = await market.summary()
+if (!summary) throw new Error('Market not found')
+
+await market.seed({
+  outcomeTokens: summary.wrappedTokens.slice(0, summary.numOutcomes),
+  seedWei,
+  oddsBps,
+  owner: account.address,
+})
+```
+
+## Quote and swap
+
+```ts
+import type { Address } from 'viem'
+
+async function buyOutcome(params: {
+  outcomeToken: Address
+  user: Address
+  amountIn: bigint
+}) {
+  const pool = client.pool(params.outcomeToken)
+  await pool.state() // optional: status / sqrtPrice / liquidity
+
+  const quote = await pool.quoteTrade({
+    side: 'buy',
+    amountIn: params.amountIn,
+  })
+
+  if (!quote.withinRange) {
+    console.warn(quote.message ?? 'Capped to max in-range size', quote.maxAmountIn)
+  }
+
+  const minAmountOut = (quote.amountOut * 99n) / 100n
+  return pool.swap({
+    side: 'buy',
+    amountIn: quote.amountIn,
+    minAmountOut,
+    user: params.user,
+  })
+}
+```
+
+`user` must be the address that holds collateral (or outcome tokens on sell) and has approved the swap helper. For AA that is the smart-wallet `msg.sender`, not a separate embedded EOA.
+
+## Market, pool, and user
+
+```ts
+const market = client.market(marketAddress)
+const pool = client.pool(outcomeToken)
+const user = client.user(account.address)
+
+await user.sharePositions()
+await user.trades({ limit: 20 })
+```
+
+## Next
+
+- [Key concepts](/concepts)
+- [React quickstart](/quickstart-react) if you later wrap a UI
+- Guides: [trade](/guides/trade), [seed](/guides/seed), [create market](/guides/create-market)

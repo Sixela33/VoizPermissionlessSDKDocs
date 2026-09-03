@@ -1,0 +1,271 @@
+---
+title: "Client"
+description: "VoizMarketsClient — factories, catalog, balances, create / redeem / burn"
+---
+
+Core of the SDK — addresses, factories for market / pool / user, catalog, balances, and create / redeem / burn.
+
+Import from `@voiz/markets-sdk`. Prefer instance methods and `client.market|pool|user` with a viem `WalletClient` or injected `sendCalls`. Call encoding and submission stay internal.
+
+## Construction
+
+### VoizMarketsClient
+
+```ts
+class VoizMarketsClient {
+  readonly chainId: number
+  readonly addresses: ChainAddresses
+  readonly publicClient?: PublicClient
+  readonly walletClient?: WalletClient
+
+  constructor(config?: ClientConfig)
+}
+```
+
+In React, prefer `useVoiz().client` over constructing by hand.
+
+### ClientConfig
+
+```ts
+type ClientConfig = {
+  chainId?: number
+  addresses?: AddressOverrides
+  publicClient?: PublicClient
+  walletClient?: WalletClient
+  /**
+   * Optional custom sender. When set, high-level write methods use it
+   * instead of sequential `walletClient.sendTransaction`.
+   */
+  sendCalls?: SendCalls
+}
+```
+
+### withAddresses
+
+Returns a new client with address overrides merged into the current map.
+
+```ts
+const staging = client.withAddresses({ hook: STAGING_HOOK })
+```
+
+```ts
+// returns
+VoizMarketsClient
+```
+
+## Factories
+
+`VoizMarket`, `VoizPool`, and `VoizUser` are **not** root-exported — obtain them here.
+
+### market
+
+`VoizMarket` at `address`.
+
+```ts
+const market = client.market(marketAddress)
+```
+
+```ts
+// returns
+VoizMarket
+```
+
+### pool
+
+`VoizPool` for an outcome token (optional collateral override).
+
+```ts
+const pool = client.pool(outcomeToken)
+// or client.pool(outcomeToken, collateralToken)
+```
+
+```ts
+// returns
+VoizPool
+```
+
+### user
+
+`VoizUser` at `address` (trades / share positions / LP).
+
+```ts
+const user = client.user(walletAddress)
+```
+
+```ts
+// returns
+VoizUser
+```
+
+## Catalog
+
+### listMarketAddresses
+
+On-chain factory market list (zeros filtered out).
+
+```ts
+const addresses = await client.listMarketAddresses()
+```
+
+```ts
+// returns
+Promise<Address[]>
+```
+
+### isMarket
+
+Whether `address` is in the live factory market list.
+
+```ts
+const ok = await client.isMarket(marketAddress)
+```
+
+```ts
+// returns
+Promise<boolean>
+```
+
+### listMarkets
+
+Homepage catalog: indexer-first market summaries, with RPC factory + load fallback.
+
+```ts
+const { markets, source, usedFallback } = await client.listMarkets()
+```
+
+```ts
+// returns
+Promise<{
+  markets: Array<{
+    address: Address
+    marketName: string
+    outcomes: string[]
+    resolver: Address
+    resolverKind: "admin" | "committee"
+    marketAdmin: Address
+    threshold: number | null
+    resolutionMode: number
+    conditionId: `0x${string}`
+    resolved: boolean
+    winningOutcome: number | null
+    wrappedTokens: Address[]
+    numOutcomes: number
+    imageUri: string | null
+    outcomeImageUris: (string | null)[]
+    outcomeStats?: Array<{
+      index: number
+      impliedPct: number | null
+      liquidityCollateral: bigint | null
+      volumeCollateral: bigint | null
+    }>
+  }>
+  source: "indexer" | "rpc"
+  usedFallback: boolean
+}>
+```
+
+### ListMarketsResult
+
+```ts
+type ListMarketsResult = {
+  markets: MarketSummary[]
+  source: "indexer" | "rpc"
+  /** True when ponder was attempted and failed, so RPC was used. */
+  usedFallback: boolean
+}
+```
+
+### getErc20Balance
+
+ERC-20 `balanceOf` for any token.
+
+```ts
+const bal = await client.getErc20Balance(token, owner)
+```
+
+```ts
+// returns
+Promise<bigint>
+```
+
+### getCollateralBalance
+
+Collateral (`addresses.collateral`) balance for `owner`.
+
+```ts
+const bal = await client.getCollateralBalance(owner)
+```
+
+```ts
+// returns
+Promise<bigint>
+```
+
+## Writes
+
+### createMarket
+
+Creates a market and resolves `marketAddress` from receipts / hashes when possible.
+
+```ts
+const { result, hashes, marketAddress } = await client.createMarket({
+  marketName: "Will it rain?",
+  outcomes: ["Yes", "No"],
+  resolverKind: "admin",
+  marketAdmin: admin,
+})
+```
+
+```ts
+// returns
+Promise<{
+  result: unknown // opaque sender result
+  hashes: Hash[]
+  marketAddress?: Address
+}>
+```
+
+Opaque sender `result`, extracted `hashes`, and `marketAddress` when it can be parsed from receipts / waited hashes.
+
+### redeem
+
+Redeems outcome tokens for collateral after resolution (or as allowed by the market).
+
+```ts
+const { result, hashes } = await client.redeem({
+  marketAddress,
+  outcomeTokens,
+  indexes,
+  amounts,
+  owner,
+})
+```
+
+```ts
+// returns
+Promise<{
+  result: unknown // opaque sender result
+  hashes: Hash[]
+}>
+```
+
+### burn
+
+Burns an LP NFT position via the PositionManager (same send path as redeem / swap).
+Pass `outcomeToken` (and optional `collateralToken`); the SDK builds the Uniswap v4 PoolKey internally.
+
+```ts
+const { result, hashes } = await client.burn({
+  tokenId,
+  outcomeToken,
+  recipient: owner,
+})
+```
+
+```ts
+// returns
+Promise<{
+  result: unknown // opaque sender result
+  hashes: Hash[]
+}>
+```

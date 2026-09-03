@@ -1,0 +1,64 @@
+---
+title: "Trade an outcome"
+description: "Quote with pool.quoteTrade, then swap"
+---
+
+Buy or sell an outcome against collateral — quote live, then swap.
+
+Always size with `client.pool(outcomeToken).quoteTrade`, then submit with `.swap`. Use `prices` / `MarketSummary` for mid prices in the UI — **not** for trade sizing.
+
+## Prerequisites
+
+- Seeded market (`seedStatus() === 'seeded'`)
+- Collateral (buy) or outcome tokens (sell)
+- Outcome token from `summary.wrappedTokens[index]` (real outcomes only)
+
+## Steps
+
+### 1. Get the pool
+
+```tsx
+import { useVoiz } from '@voiz/markets-sdk/react'
+import { parseUnits } from 'viem'
+
+const { client } = useVoiz()
+
+const summary = await client.market(marketAddress).summary()
+const outcomeToken = summary!.wrappedTokens[0]! // e.g. Yes
+const pool = client.pool(outcomeToken)
+```
+
+### 2. Quote exact-in
+
+```tsx
+const amountIn = parseUnits('10', 18)
+
+const quote = await pool.quoteTrade({
+  side: 'buy', // or 'sell'
+  amountIn,
+})
+
+// quote.amountOut applies to quote.amountIn (may be capped)
+// quote.withinRange === false → too large for the pool's current price range
+// quote.maxAmountIn / quote.message for UI
+// quote.spotPrice, quote.priceAfter, quote.priceAboveNinetyNineCents
+```
+
+If `withinRange` is false, size the swap to `quote.amountIn` (or `maxAmountIn`), not the original request.
+
+### 3. Swap
+
+```tsx
+const minAmountOut = (quote.amountOut * 99n) / 100n // example 1% slippage
+
+await pool.swap({
+  side: 'buy',
+  amountIn: quote.amountIn,
+  minAmountOut,
+  user: yourAddress, // must be the signing wallet / AA that holds the tokens
+})
+```
+
+## Tip
+
+Buys are collateral → outcome; sells are the reverse. Don't drive trade buttons from `prices` — those can be indexer-stale. Always `quoteTrade` right before `swap`. Vanilla `client.pool(token)` works the same without `useVoiz`.

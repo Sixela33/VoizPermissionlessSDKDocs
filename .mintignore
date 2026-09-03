@@ -5,3 +5,7 @@
 # Draft content
 drafts/
 *.draft.mdx
+
+# Kept on disk but not published
+dump.mdx
+_audit-*.md

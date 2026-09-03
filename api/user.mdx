@@ -1,0 +1,198 @@
+---
+title: "User"
+description: "VoizUser via client.user(addr) — trades, share positions, LP"
+---
+
+Trades, share positions, and LP for one address. Obtain with `client.user(address)` — the `VoizUser` class is **not** a root export. Prefer this over raw indexer helpers.
+
+```ts
+const { client } = useVoiz()
+const user = client.user(address)
+```
+
+## Methods
+
+### trades
+
+Indexed trade history. Soft-fails to `[]` if the indexer is down.
+
+```ts
+const fills = await client.user(addr).trades({ market, limit: 50 })
+```
+
+```ts
+// returns
+Promise<Array<{
+  id: string
+  marketId: Address
+  marketName: string
+  outcomeIndex: number
+  outcomeLabel: string
+  side: "buy" | "sell"
+  outcomeAmount: bigint
+  collateralAmount: bigint
+  hookFee: bigint
+  priceCt: number
+  timestamp: string
+  transactionHash: Hex
+}>>
+```
+
+Fill rows from the indexer (empty array on soft-fail).
+
+### sharePositions
+
+Outcome share book: one row per (market, outcome) with net shares and average entry. Soft-fails to `[]`.
+
+When `markets` is `MarketSummary[]`, also multicalls live ERC-20 balances. Mark `priceCt` comes from the indexer; raw fills stay on `trades()`; LP NFTs on `lpPositions()`.
+
+```ts
+const book = await user.sharePositions({ markets: summaries })
+```
+
+```ts
+// returns
+Promise<Array<{
+  marketId: Address
+  marketName: string
+  outcomeIndex: number
+  outcomeLabel: string
+  token: Address
+  shares: bigint
+  avgEntryPriceCt: number | null
+  costCollateral: bigint | null
+  priceCt: number | null
+  resolved: boolean
+  winningOutcome: number | null
+}>>
+```
+
+### lpPositions
+
+Open LP positions — one market (indexer discovery + live enrich) or all markets.
+
+```ts
+// Single market — wrappedTokens required
+const one = await user.lpPositions({
+  market: marketAddress,
+  wrappedTokens,
+})
+
+// All markets
+const all = await user.lpPositions()
+```
+
+```ts
+// returns (single market)
+Promise<Array<{
+  tokenId: bigint
+  outcomeIndex: number
+  outcomeToken: Address
+  tickLower: number
+  tickUpper: number
+  liquidity: bigint
+  amount0: bigint
+  amount1: bigint
+  entryValueCollateral: bigint | null
+  currentValueCollateral: bigint | null
+  pnlCollateral: bigint | null
+}>>
+
+// returns (all markets) — same fields plus:
+// marketId, marketName, outcomeLabel
+```
+
+`poolKey` may be present at runtime but is `@internal` — use `outcomeToken` for `client.burn`.
+
+## Related types
+
+### UserTradesParams
+
+```ts
+type UserTradesParams = {
+  market?: Address
+  limit?: number
+}
+```
+
+### UserPositionsParams
+
+- `markets?: Address[]` — filter by market id
+- `markets?: MarketSummary[]` — also supplies labels / tokens / resolution and enables a live balance multicall
+
+```ts
+type UserPositionsParams = {
+  markets?: Address[] | MarketSummary[]
+}
+```
+
+### UserSharePosition
+
+- Identity: `marketId`, `marketName`, `outcomeIndex`, `outcomeLabel`, `token`
+- Book: `shares`, `avgEntryPriceCt`, `costCollateral`, `priceCt`
+- Resolution: `resolved`, `winningOutcome`
+
+```ts
+type UserSharePosition = {
+  marketId: Address
+  marketName: string
+  outcomeIndex: number
+  outcomeLabel: string
+  token: Address
+  shares: bigint
+  avgEntryPriceCt: number | null
+  costCollateral: bigint | null
+  priceCt: number | null
+  resolved: boolean
+  winningOutcome: number | null
+}
+```
+
+### UserLpPositionsParams
+
+```ts
+type UserLpPositionsParams = {
+  market?: Address
+  wrappedTokens?: Address[]
+  collateral?: Address
+  markets?: Array<{
+    address: Address
+    marketName: string
+    outcomes: string[]
+    wrappedTokens: Address[]
+  }>
+}
+```
+
+### AllMarketsLpPosition
+
+```ts
+type AllMarketsLpPosition = LpPosition & {
+  marketId: Address
+  marketName: string
+  outcomeLabel: string
+}
+```
+
+### Trade
+
+- Identity: `id`, `marketId`, `marketName`, `outcomeIndex`, `outcomeLabel`
+- Fill: `side`, `outcomeAmount`, `collateralAmount`, `hookFee`, `priceCt`
+- Meta: `timestamp`, `transactionHash`
+
+```ts
+type Trade = {
+  id: string
+  marketId: Address
+  marketName: string
+  outcomeIndex: number
+  outcomeLabel: string
+  side: "buy" | "sell"
+  outcomeAmount: bigint
+  collateralAmount: bigint
+  hookFee: bigint
+  priceCt: number
+  timestamp: string
+  transactionHash: Hex
+}
+```

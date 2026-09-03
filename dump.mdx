@@ -3,13 +3,15 @@ title: "Dump"
 description: "SDK public API review inventory — every consumer-facing export for trim/keep review"
 ---
 
-This page lists every public consumer API of `@voiz/markets-sdk`. Prefer FE access via `useVoiz().client` only (Client → Market → Pool → User). Sole public seed write is `market.seed`. Primary LP path is `market.addLiquidityAcrossOutcomes`. Quotes: `pool.quoteTrade` (trades) and `quoteSeed` (seed collateral totals); prefer `displayPrices` over `outcomePrices` for FE display.
+This page lists every public consumer API of `@voiz/markets-sdk`. Prefer FE access via `useVoiz().client` only (Client → Market → Pool → User). Sole public seed write is `market.seed`. Primary LP path is `market.addLiquidity`. Quotes: `pool.quoteTrade` (trades) and `quoteSeed` (seed collateral totals); use `prices` / `metrics` for FE display (RPC `outcomePrices` is private).
+
+**Cleanup backlog (2026-09-03):** deleted root smoke/quote scripts + `VoizOutcome` + legacy trade-lot share builders + dead single-outcome LP; privatized `listMarketSummariesFromRpc` / `outcomePrices` / pool estimate helpers; renamed `addLiquidity`, `Trade`/`PricePoint`, `source:"indexer"`, `listMarketAddresses`, `prices`/`metrics`, `sharePositions`, `Resolve`/`Merge`/`Seed`/`QuoteTrade` params; dropped always-null `marketImageUrl`; un-exported root `V4PoolKey`.
 
 **Removed in trim (2026-09-02):** standalone `*Calls` / encode helpers; raw `fetch*FromPonder` + most ponder internals; Uniswap math dump (kept `normalizeOddsBps` / `quoteSeed` / `LpPosition*` for FE); share builders; `OutcomePositionMeta`; `useVoizClient`; non-`erc20` ABI constants; package subpath `@voiz/markets-sdk/ponder`; thin standalones.
 
-**encode* demotion (2026-09-02):** public `Client`/`Market`/`Pool` `encode*` methods removed from the consumer surface; encoding stays as private methods / action helpers (`*Calls`, `encodeSwapExactIn`, …) used only by high-level `createMarket` / `market.seed` / `swap` / `burn` / `redeem` / `addLiquidityAcrossOutcomes` / etc.
+**encode* demotion (2026-09-02):** public `Client`/`Market`/`Pool` `encode*` methods removed from the consumer surface; encoding stays as private methods / action helpers (`*Calls`, `encodeSwapExactIn`, …) used only by high-level `createMarket` / `market.seed` / `swap` / `burn` / `redeem` / `addLiquidity` / etc.
 
-**Remaining cleanup (2026-09-02 evening):** un-exported root `registerAddresses`, `DEFAULT_CHAIN_ID`, `base`, `baseSepolia`; un-exported class value re-exports `VoizPool` / `VoizOutcome` / `VoizMarket` / `VoizUser` (use `client.pool|market|user`); un-exported root `SendCalls` / `SendCallsOptions` (react still has `VoizSendCalls` / `SendCallsOptions`); demoted test-only `buildMarketOutcomeStats` / `selectNewestPriceByOutcome` (+ `Indexed*` types); dropped dead `ChainAddresses.marketView` / `wrapped1155Factory`; `files` no longer ships `src` (ponder still compiled for internals / root helpers, not advertised in `exports`).
+**Remaining cleanup (2026-09-02 evening):** un-exported root `registerAddresses`, `DEFAULT_CHAIN_ID`, `base`, `baseSepolia`; un-exported class value re-exports `VoizPool` / `VoizMarket` / `VoizUser` (use `client.pool|market|user`); un-exported root `SendCalls` / `SendCallsOptions` (react still has `VoizSendCalls` / `SendCallsOptions`); demoted test-only `buildMarketOutcomeStats` / `selectNewestPriceByOutcome` (+ `Indexed*` types); dropped dead `ChainAddresses.marketView` / `wrapped1155Factory`; `files` no longer ships `src` (ponder still compiled for internals / root helpers, not advertised in `exports`).
 
 **API cleanup (2026-09-02 night):** renamed `previewSeedTotals` → `quoteSeed({ seedWei, oddsBps })`; removed public `Client.planSeed` / `Client.seedMarket` / `Client.addLiquidityToOutcome` / `Client.send` (submit is `@internal` `submitCalls`); sole seed write `market.seed`; un-exported `MarketSnapshot` / `AddLiquidityParams` from package index (`MarketSummary` canonical for UI).
 
@@ -30,30 +32,29 @@ This page lists every public consumer API of `@voiz/markets-sdk`. Prefer FE acce
 - `Client.pool` — factory for `VoizPool` on an outcome token.
 - `Client.market` — factory for `VoizMarket` at an address.
 - `Client.user` — factory for `VoizUser` at an address.
-- `Client.listFactoryMarkets` — RPC `MarketFactory.allMarkets` (filters zero).
+- `Client.listMarketAddresses` — RPC `MarketFactory.allMarkets` (filters zero).
 - `Client.isMarket` — whether address appears in the live factory list.
 - `Client.listMarkets` — homepage catalog: ponder-first summaries, RPC fallback.
-- `Client.listMarketSummariesFromRpc` — RPC-only summaries (factory + per-market load).
+- ~~`Client.listMarketSummariesFromRpc`~~ — private (RPC fallback inside `listMarkets`).
 - `Client.getErc20Balance` — ERC20 `balanceOf` via publicClient.
 - `Client.getCollateralBalance` — collateral token balance for an owner.
 - `Client.createMarket` — create market; resolves `marketAddress` from receipts when possible.
 - `Client.redeem` — redeem outcome tokens for collateral.
-- `Client.burn` — burn an LP NFT position.
+- `Client.burn` — burn an LP NFT position (`tokenId` + `outcomeToken` [+ optional `collateralToken`]; PoolKey built internally).
 - `ListMarketsResult` — `{ markets, source, usedFallback }` from `listMarkets`.
 
-**Internal (not public):** `Client.submitCalls` (`@internal`), `planMarketSeed`, `createMarketCalls`, `seedMarketCalls`, `seedOutcomeCalls`, `splitPositionCalls`, `addLiquidityToOutcomeCalls`, `provideLiquidityCalls`, `redeemCalls`, `encodeBurnPosition`, `encodeSwapExactIn`, plus private `Market.encodeResolve` / `encodeMerge` / `encodeAddLiquidityAcrossOutcomes` and `Pool.encodeSwap`. `Market.loaded` / `MarketSnapshot` stay runtime-internal (not package-exported).
+**Internal (not public):** `Client.submitCalls` (`@internal`), `planMarketSeed`, `createMarketCalls`, `seedMarketCalls`, `seedOutcomeCalls`, `splitPositionCalls`, `(deleted addLiquidityToOutcomeCalls)`, `provideLiquidityCalls`, `redeemCalls`, `encodeBurnPosition`, `encodeSwapExactIn`, plus private `Market.encodeResolve` / `encodeMerge` / `encodeAddLiquidity` and `Pool.encodeSwap`. `Market.load` / `summaryFromRpc` / `loaded` / `MarketSnapshot` stay runtime-internal (not package-exported).
 
 ## Market / Pool / User (via client factories — classes not root-exported)
 
-- `client.market(addr)` → `VoizMarket` — load/summary/display, resolve/merge/seed, primary LP `addLiquidityAcrossOutcomes`.
-- `Market.load` — on-chain refresh (cache internal; prefer `summary` / display helpers for UI).
-- `Market.summary` / `summaryFromRpc` — detail `MarketSummary` DTO (canonical for FE).
+- `client.market(addr)` → `VoizMarket` — summary/display, resolve/merge/seed, primary LP `addLiquidity`.
+- `Market.summary` — detail `MarketSummary` DTO (canonical for FE; `rpcOnly: true` for chain-only).
 - `Market.seed` — sole public seed write (split once, then one send per outcome batch).
-- `Market.priceHistory` / `displayPrices` / `displayMetrics` / `outcomePrices` / `seedStatus` / `listLpPositions` / `resolve` / `merge` / `addLiquidityAcrossOutcomes`.
-- `client.pool(token)` → `VoizPool` — `state`, `quoteTrade`, `swap`, mid/after-swap helpers.
-- `client.user(addr)` → `VoizUser` — `trades` / `positions` / `lpPositions`.
+- `Market.priceHistory` / `prices` / `metrics` / `seedStatus` / `resolve` / `merge` / `addLiquidity` (`listLpPositions` / RPC price helpers stay internal).
+- `client.pool(token)` → `VoizPool` — `state`, `quoteTrade`, `swap` (use `quoteTrade.priceAfter` / `priceAboveNinetyNineCents`).
+- `client.user(addr)` → `VoizUser` — `trades` / `sharePositions` / `lpPositions`.
 - `resolvedDisplayRows` — builds 0/1 display price rows for a resolved market.
-- Types: `OutcomePriceRow`, `OutcomeMetricsRow`, `DisplayOutcomePrices`, `DisplayOutcomeMetrics`, `EncodeResolveParams`, `EncodeMergeParams`, `PoolStatus`, `PoolState`, `QuoteExactInResult`, `AllMarketsLpPosition`, `UserLpPositionsParams`, `UserTradesParams`, `UserSharePosition`, `UserPositionsParams`.
+- Types: `OutcomePriceRow`, `OutcomeMetricsRow`, `OutcomePrices`, `OutcomeMetrics`, `ResolveParams`, `MergeParams`, `PoolStatus`, `PoolState`, `QuoteTradeResult`, `AllMarketsLpPosition`, `UserLpPositionsParams`, `UserTradesParams`, `UserSharePosition`, `UserPositionsParams`.
 
 ## React
 
@@ -71,7 +72,7 @@ This page lists every public consumer API of `@voiz/markets-sdk`. Prefer FE acce
 - `ResolverKind` — `"admin" | "committee"`.
 - `CreateMarketParams` / `CreateMarketArgs` / `SeedLeg` / `SeedPlan` / `V4PoolKey`.
 - `ChainAddresses` / `AddressOverrides` / `ClientConfig`.
-- `SeedMarketParams` / `SeedOutcomeParams` / `RedeemParams`.
+- `SeedParams` / `SeedOutcomeParams` / `RedeemParams`.
 - `MarketSummary` — catalog/list/detail DTO (ponder or RPC); canonical for FE UI.
 
 ## Other (kept public)
@@ -86,7 +87,7 @@ This page lists every public consumer API of `@voiz/markets-sdk`. Prefer FE acce
 
 - `marketImagePath` — deterministic blob pathname for market/outcome image.
 - `aggregateOutcomeCollateral` — sums liquidity or volume across outcome stats.
-- `MarketOutcomeStats` / `PonderPricePoint` / `PonderTrade`.
+- `MarketOutcomeStats` / `PricePoint` / `Trade`.
 
 ### ABIs
 

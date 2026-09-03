@@ -1,0 +1,141 @@
+---
+title: "Pool"
+description: "VoizPool via client.pool(token) — state, quotes, and swap"
+---
+
+Pool state, trade quotes, and swap for one outcome–collateral pair. Obtain with `client.pool(outcomeToken, collateralToken?)` — the `VoizPool` class is **not** a root export.
+
+Use `quoteTrade` for trade quotes (not `market.prices`).
+
+```ts
+const { client } = useVoiz()
+const pool = client.pool(outcomeToken)
+```
+
+## State
+
+Prefer `quoteTrade.priceAfter` / `priceAboveNinetyNineCents` for trade gates. Mid/reserve helpers are package-internal.
+
+
+### state
+
+Live pool status, `slot0`, and liquidity.
+
+```ts
+const { status, sqrtPriceX96, tick, liquidity, poolId } = await pool.state()
+```
+
+```ts
+// returns
+Promise<{
+  status: "uninitialized" | "open"
+  sqrtPriceX96: bigint
+  tick: number
+  liquidity: bigint
+  poolId: Hex
+}>
+```
+
+### PoolStatus / PoolState
+
+```ts
+type PoolStatus = "uninitialized" | "open"
+
+type PoolState = {
+  status: PoolStatus
+  sqrtPriceX96: bigint
+  tick: number
+  liquidity: bigint
+  poolId: Hex
+}
+```
+
+### priceFromState
+
+Mid price from an already-fetched `PoolState` (no RPC). `null` when status is not `"open"`.
+
+```ts
+const mid = pool.priceFromState(await pool.state())
+```
+
+```ts
+// returns
+number | null
+```
+
+### quoteTrade
+
+Exact-in quote matching `swap` sides: buy = collateral → outcome; sell = the reverse. May return a capped size when the request exceeds prediction-range liquidity (`withinRange: false`).
+
+```ts
+const quote = await client.pool(outcomeToken).quoteTrade({
+  side: "buy",
+  amountIn: 5_000_000n,
+})
+```
+
+```ts
+// returns
+Promise<{
+  requestedAmountIn: bigint
+  amountIn: bigint
+  amountOut: bigint
+  withinRange: boolean
+  maxAmountIn: bigint
+  message?: string
+  error?: "EXCEEDS_RANGE"
+  spotPrice?: number | null
+  priceAfter?: number | null
+  priceAboveNinetyNineCents?: boolean
+}>
+```
+
+### QuoteTradeResult
+
+- `requestedAmountIn` — size you asked for
+- `amountIn` — size this `amountOut` applies to (may be capped)
+- `amountOut` — expected out for `amountIn`
+- `withinRange` — whether the full request quoted successfully
+- `maxAmountIn` — largest size that still quotes
+- `message?` / `error?: "EXCEEDS_RANGE"` — when capped
+- `spotPrice?` / `priceAfter?` — mid before / estimated after
+- `priceAboveNinetyNineCents?` — current spot already above 0.99
+
+```ts
+type QuoteTradeResult = {
+  requestedAmountIn: bigint
+  amountIn: bigint
+  amountOut: bigint
+  withinRange: boolean
+  maxAmountIn: bigint
+  message?: string
+  error?: "EXCEEDS_RANGE"
+  spotPrice?: number | null
+  priceAfter?: number | null
+  priceAboveNinetyNineCents?: boolean
+}
+```
+
+### swap
+
+Exact-in swap via the Seer V4 helper and the client sender.
+
+```ts
+const result = await pool.swap({
+  side: "buy",
+  amountIn: quote.amountIn,
+  minAmountOut: quote.amountOut * 99n / 100n,
+  user: owner,
+})
+```
+
+```ts
+// returns
+Promise<unknown>
+```
+
+Opaque sender result (same shape as your `sendCalls` / wallet path).
+
+## Advanced
+
+`pool.key` exists for low-level callers (type not root-exported). LP burn and swap use outcome/collateral tokens — you do not pass a PoolKey.

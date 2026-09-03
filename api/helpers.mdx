@@ -1,0 +1,142 @@
+---
+title: "Helpers & utilities"
+description: "getAddresses, quoteSeed, display helpers, and erc20Abi"
+---
+
+Root values and utilities from `@voiz/markets-sdk` (not class methods). Product types live beside the methods that return them (`client` / `market` / `pool` / `user`). `VoizMarket` / `VoizPool` / `VoizUser` come from `client.market|pool|user`, not the package root.
+
+## Chains
+
+### getAddresses
+
+Resolves the known-chain address map, with optional overrides.
+
+```ts
+const addresses = getAddresses(chainId)
+// or getAddresses(chainId, { hook: CUSTOM_HOOK })
+```
+
+```ts
+// returns
+{
+  chainId: number
+  marketFactory: Address
+  adminOracle: Address
+  multisigOracle: Address
+  router: Address
+  collateral: Address
+  conditionalTokens: Address
+  poolManager: Address
+  positionManager: Address
+  stateView: Address
+  quoter: Address
+  permit2: Address
+  hook: Address
+  seerV4Swap: Address
+  fee: number
+  tickSpacing: number
+  hookFeeBips: number
+}
+```
+
+## Seed quote
+
+### normalizeOddsBps
+
+Normalizes raw odds to `bigint` basis points that sum to `10_000` (each outcome 1%–99%).
+
+```ts
+const oddsBps = normalizeOddsBps([40, 60])
+```
+
+```ts
+// returns
+bigint[]
+```
+
+### quoteSeed
+
+Seed collateral totals without needing outcome tokens (safe before create). Naming aligns with `pool.quoteTrade`.
+
+```ts
+const { splitAmount, poolCollateral, totalCollateral } = quoteSeed({
+  seedWei,
+  oddsBps,
+})
+```
+
+```ts
+// returns
+{
+  splitAmount: bigint
+  poolCollateral: bigint
+  totalCollateral: bigint
+}
+```
+
+Share half (`splitAmount`), pool-side collateral, and total credits to lock.
+
+## Display helpers
+
+### resolvedDisplayRows
+
+Fixed 0 / 1 display price rows for a resolved market (winner = 100%).
+
+```ts
+const rows = resolvedDisplayRows({
+  outcomes,
+  wrappedTokens,
+  numOutcomes,
+  winningOutcome,
+})
+```
+
+```ts
+// returns
+Array<{
+  index: number
+  label: string
+  token: T
+  priceCt: number
+  impliedPct: number
+}>
+```
+
+### marketImagePath
+
+Deterministic blob pathname for a market or outcome image.
+
+```ts
+const main = marketImagePath(marketAddress)
+const outcome0 = marketImagePath(marketAddress, 0)
+// e.g. market-images/0x…/main.webp
+//      market-images/0x…/outcome-0.webp
+```
+
+```ts
+// returns
+string
+```
+
+### aggregateOutcomeCollateral
+
+Sums liquidity or volume across outcome stats. Returns `null` if any row is missing.
+
+```ts
+const liq = aggregateOutcomeCollateral(summary.outcomeStats, "liquidityCollateral")
+```
+
+```ts
+// returns
+bigint | null
+```
+
+## ABI
+
+### erc20Abi
+
+ERC-20 fragment for front-end wallet paths (`balanceOf` / `allowance` / `approve` / `decimals` / `symbol`).
+
+```ts
+const erc20Abi: readonly AbiFunction[]
+```

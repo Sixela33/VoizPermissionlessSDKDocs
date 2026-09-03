@@ -1,0 +1,135 @@
+---
+title: "React"
+description: "VoizProvider, useVoiz, and React context types from @voiz/markets-sdk/react"
+---
+
+React wiring for the SDK — the provider builds a `VoizMarketsClient`; your UI should go through `useVoiz().client`.
+
+Import from `@voiz/markets-sdk/react`. Inject `sendCalls` on `<VoizProvider>` for Privy / AA; prefer high-level client / market / pool methods over assembling calls yourself.
+
+## Provider
+
+### VoizProvider
+
+Builds a memoized `VoizMarketsClient` from chain, clients, and an optional custom sender, and puts it in React context.
+
+```tsx
+<VoizProvider
+  chainId={chainId}
+  publicClient={publicClient}
+  walletClient={walletClient}
+  sendCalls={sendCalls} // optional AA / Privy
+>
+  {children}
+</VoizProvider>
+```
+
+```ts
+// returns
+JSX.Element
+```
+
+### VoizProviderProps
+
+```ts
+type VoizProviderProps = {
+  chainId: number
+  publicClient: PublicClient
+  /** Full address map. If omitted, resolved via `getAddresses(chainId)`. */
+  addresses?: ChainAddresses
+  /** Optional EOA / injected wallet for the client and default `sendCalls`. */
+  walletClient?: WalletClient
+  /**
+   * Optional custom sender (AA / Privy). Injected onto `VoizMarketsClient`.
+   * May receive `{ requiredSigner }` for admin-gated writes (e.g. resolve).
+   * If omitted and `walletClient` is set, defaults to sequential
+   * `walletClient.sendTransaction`.
+   */
+  sendCalls?: VoizSendCalls
+  children: ReactNode
+}
+```
+
+## Hook
+
+### useVoiz
+
+Full Voiz React context. Throws if used outside `<VoizProvider>`. Prefer `const { client } = useVoiz()` for protocol reads and writes.
+
+```ts
+const { client, addresses, chainId } = useVoiz()
+```
+
+```ts
+// returns
+{
+  client: VoizMarketsClient
+  addresses: {
+    chainId: number
+    marketFactory: Address
+    adminOracle: Address
+    multisigOracle: Address
+    router: Address
+    collateral: Address
+    conditionalTokens: Address
+    poolManager: Address
+    positionManager: Address
+    stateView: Address
+    quoter: Address
+    permit2: Address
+    hook: Address
+    seerV4Swap: Address
+    fee: number
+    tickSpacing: number
+    hookFeeBips: number
+  }
+  chainId: number
+  publicClient: PublicClient
+  walletClient?: WalletClient<Transport, Chain | undefined, Account>
+  sendCalls?: (
+    calls: Call[],
+    opts?: { requiredSigner?: Address }
+  ) => Promise<unknown>
+}
+```
+
+## Context types
+
+### VoizContextValue
+
+```ts
+type VoizContextValue = {
+  client: VoizMarketsClient
+  addresses: ChainAddresses
+  chainId: number
+  publicClient: PublicClient
+  walletClient?: WalletClient<Transport, Chain | undefined, Account>
+  /** Prefer high-level client / market / pool methods. */
+  sendCalls?: VoizSendCalls
+}
+```
+
+### VoizSendCalls
+
+Alias of the SDK `SendCalls` type for React injection.
+
+```ts
+type VoizSendCalls = (
+  calls: Call[],
+  opts?: SendCallsOptions
+) => Promise<unknown>
+```
+
+### SendCallsOptions
+
+Options for injected AA / Privy senders (also re-exported from React).
+
+```ts
+type SendCallsOptions = {
+  /**
+   * Force a specific EOA / wallet to sign (e.g. marketAdmin for AdminOracle).
+   * Apps with smart+EOA dual wallets should honor this when routing.
+   */
+  requiredSigner?: Address
+}
+```

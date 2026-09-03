@@ -1,0 +1,67 @@
+---
+title: "Read user positions"
+description: "Shares, trades, and LP via client.user(addr)"
+---
+
+Pull a wallet's outcome shares, trade history, and open LP NFTs through `client.user(address)`.
+
+## Prerequisites
+
+- Indexer (Ponder) configured for soft-fail reads — failures return `[]`
+- Optional: `MarketSummary[]` when you want live ERC-20 balances on share positions
+
+## Steps
+
+### 1. Build a user handle
+
+```tsx
+import { useVoiz } from '@voiz/markets-sdk/react'
+
+const { client } = useVoiz()
+const user = client.user(walletAddress)
+```
+
+### 2. Share positions
+
+One row per `(market, outcome)` with net shares and average entry:
+
+```tsx
+const positions = await user.sharePositions()
+// Optional filter + live balances:
+// await user.sharePositions({ markets: summaries }) // MarketSummary[]
+// await user.sharePositions({ markets: [marketAddress] })
+
+for (const p of positions) {
+  // p.shares, p.avgEntryPriceCt, p.priceCt, p.marketName, p.outcomeLabel
+}
+```
+
+### 3. Trades and LP
+
+```tsx
+const trades = await user.trades({ market: marketAddress, limit: 50 })
+
+// All markets:
+const allLp = await user.lpPositions()
+
+// Single market (wrappedTokens required):
+const marketLp = await user.lpPositions({
+  market: marketAddress,
+  wrappedTokens: summary.wrappedTokens,
+})
+```
+
+### 4. Prices for UI
+
+For catalog cards and detail pages, prefer:
+
+```tsx
+const { markets } = await client.listMarkets() // MarketSummary[] — the objects you render in the list
+const { rows, source } = await client.market(marketAddress).prices()
+```
+
+`source` is `"indexer"` or `"rpc"` — size your refetch cadence from it. Keep trade quotes on `pool.quoteTrade`.
+
+## Tip
+
+Shares → `.sharePositions()`, fills → `.trades()`, LP NFTs → `.lpPositions()`. Don't mix LP valuation into the share book. Soft-fail means empty arrays, not thrown errors, when the indexer is down.

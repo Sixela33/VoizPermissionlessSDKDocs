@@ -1,0 +1,62 @@
+---
+title: "Create a market"
+description: "Deploy a new prediction market with client.createMarket"
+---
+
+Spin up a new market on-chain — you get an address you can seed, trade, and LP against next.
+
+## Prerequisites
+
+- A working `VoizProvider` (or a plain `VoizMarketsClient` with `publicClient` plus `walletClient` / `sendCalls`)
+- Gas and a connected wallet that can send txs
+
+## Steps
+
+### 1. Grab the client
+
+```tsx
+import { useVoiz } from '@voiz/markets-sdk/react'
+
+const { client } = useVoiz()
+// Vanilla: `new VoizMarketsClient({ … })` works the same for createMarket.
+```
+
+### 2. Create the market
+
+Pass `CreateMarketParams`. Choose who settles it:
+
+- **`admin`** — set `marketAdmin` (required)
+- **`committee`** — set `voters` and `threshold` (1…voters.length)
+
+```tsx
+import type { Address } from 'viem'
+
+const { result, hashes, marketAddress } = await client.createMarket({
+  marketName: 'Will ETH flip BTC by 2027?',
+  outcomes: ['Yes', 'No'],
+  resolverKind: 'admin',
+  marketAdmin: yourAddress as Address,
+  // optional: category, lang, protocolBips, creatorBips, referrerBips
+})
+
+if (!marketAddress) {
+  throw new Error('Market created but address not resolved from receipt')
+}
+
+const market = client.market(marketAddress)
+```
+
+You get `{ result, hashes, marketAddress? }`. When a receipt or hash is around, the SDK pulls the new market address out for you.
+
+### 3. Load a summary for the UI (optional)
+
+Use `MarketSummary` for list and detail screens — it's the object you render in the list:
+
+```tsx
+const summary = await market.summary()
+// or catalog: const { markets } = await client.listMarkets()
+```
+
+## Tip
+
+If `marketAddress` is missing, wait for the receipt and retry, or pull `client.listMarketAddresses()` / `listMarkets()` and grab the newest one. Don't invent addresses. Next: [Seed liquidity](/guides/seed).

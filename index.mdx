@@ -1,20 +1,64 @@
 ---
 title: "Introduction"
-description: "Welcome to your project"
+description: "TypeScript SDK for Voiz markets on EVM"
 ---
 
-Write a short description of your product here. What it does, who it's for, and what they can accomplish with it.
+`@voiz/markets-sdk` is the TypeScript SDK for Voiz markets on EVM. List markets, seed pools, trade, add liquidity, and read positions — with viem under the hood.
 
-<Tip>
-  Ready to make this your own? Start by editing this page. Update your `docs.json` file to customize your site. Then fill out the [Quickstart](/quickstart) page.
-</Tip>
+## Install
 
-<Card title="Quickstart" icon="rocket" href="/quickstart">
-  This card links to the quickstart page in your project.
-</Card>
-<Card title="Components" icon="puzzle-piece" href="https://mintlify.com/docs/components">
-  Add cards, callouts, steps, tabs, and more to design and structure your pages.
-</Card>
-<Card title="Settings" icon="gear" href="https://mintlify.com/docs/organize/settings">
-  Set your site name, branding, and navigation in the `docs.json` file.
-</Card>
+<CodeGroup>
+
+```bash npm
+npm install @voiz/markets-sdk viem
+```
+
+```bash pnpm
+pnpm add @voiz/markets-sdk viem
+```
+
+```bash yarn
+yarn add @voiz/markets-sdk viem
+```
+
+</CodeGroup>
+
+React apps also need the React peer (optional for vanilla viem):
+
+```bash
+npm install react
+```
+
+Import paths:
+
+- `@voiz/markets-sdk` — `VoizMarketsClient`, helpers (`quoteSeed`, `normalizeOddsBps`, `getAddresses`), types, `erc20Abi`
+- `@voiz/markets-sdk/react` — `VoizProvider`, `useVoiz`
+
+## Mental model
+
+Access everything through a client, then drill down:
+
+```ts
+client.market(address)  // status, seed, resolve, LP across outcomes
+client.pool(token)      // quoteTrade, swap
+client.user(address)    // trades, sharePositions, LP
+```
+
+Writes use an injected `sendCalls` (or a `walletClient` fallback). Call `market.seed`, `pool.swap`, and similar — the client submits for you.
+
+## Next steps
+
+<CardGroup cols={2}>
+  <Card title="Key concepts" href="/concepts">
+    Client → Market → Pool → User, quotes vs writes, indexer vs RPC.
+  </Card>
+  <Card title="Quickstart: React / Next.js" href="/quickstart-react">
+    Wrap your app with `VoizProvider`, then use `useVoiz().client`.
+  </Card>
+  <Card title="Quickstart: vanilla viem" href="/quickstart-viem">
+    Construct `VoizMarketsClient` without React.
+  </Card>
+  <Card title="Create a market" href="/guides/create-market">
+    Step-by-step flows after you are set up.
+  </Card>
+</CardGroup>

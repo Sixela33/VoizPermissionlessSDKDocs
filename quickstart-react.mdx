@@ -1,0 +1,131 @@
+---
+title: "Quickstart: React / Next.js"
+description: "VoizProvider + useVoiz in a React app"
+---
+
+Wrap your React or Next.js app, list markets, and submit a trade with `@voiz/markets-sdk/react`.
+
+## Install
+
+```bash
+npm install @voiz/markets-sdk viem react
+```
+
+You also need a viem `PublicClient`, plus a wallet or AA sender for writes. Typical stacks use wagmi/viem for RPC and Privy (or another AA wallet) for `sendCalls`.
+
+## Wrap the app
+
+Pass `chainId` and `publicClient`. Optionally override `addresses`, attach a `walletClient`, or inject custom `sendCalls` (Privy / smart-wallet batch).
+
+```tsx
+'use client'
+
+import { VoizProvider } from '@voiz/markets-sdk/react'
+import { createPublicClient, http } from 'viem'
+import { baseSepolia } from 'viem/chains'
+
+const publicClient = createPublicClient({
+  chain: baseSepolia,
+  transport: http(),
+})
+
+export function Providers({ children }: { children: React.ReactNode }) {
+  return (
+    <VoizProvider
+      chainId={baseSepolia.id}
+      publicClient={publicClient}
+      // walletClient={walletClient}   // EOA / injected wallet
+      // sendCalls={aaSendCalls}       // Privy / AA batch (preferred for product UIs)
+    >
+      {children}
+    </VoizProvider>
+  )
+}
+```
+
+<Tip>
+  Inject `sendCalls` when you use account abstraction. The provider builds a memoized `VoizMarketsClient` with that sender, so `pool.swap`, `market.seed`, and similar just work. You do not assemble or submit raw batches in UI code.
+</Tip>
+
+If you omit `sendCalls` but pass `walletClient`, the SDK falls back to sequential `walletClient.sendTransaction`. If you omit `addresses`, they resolve via `getAddresses(chainId)`.
+
+## Use the client
+
+```tsx
+'use client'
+
+import { useVoiz } from '@voiz/markets-sdk/react'
+
+export function MarketList() {
+  const { client, chainId, addresses } = useVoiz()
+
+  async function load() {
+    const { markets, source, usedFallback } = await client.listMarkets()
+    // markets: MarketSummary[] — use for list and detail UI
+    console.log(chainId, addresses.collateral, source, usedFallback, markets.length)
+  }
+
+  return <button onClick={load}>Load markets</button>
+}
+```
+
+`useVoiz()` returns `{ client, addresses, chainId, publicClient, walletClient?, ... }` and throws outside `VoizProvider`.
+
+## Quote and swap
+
+<Steps>
+  <Step title="Pick a pool">
+    Outcome tokens live on each `MarketSummary` as `wrappedTokens` (real outcomes first; Invalid last). Use `client.pool(outcomeToken)`.
+  </Step>
+  <Step title="Quote exact-in">
+    Call `pool.quoteTrade` for a live RPC quote. Prefer it over display prices for trade UI.
+  </Step>
+  <Step title="Swap">
+    Pass the same `side` / `amountIn`, a slippage-aware `minAmountOut`, and the token-holding `user` (the AA smart wallet address when using Privy).
+  </Step>
+</Steps>
+
+```tsx
+'use client'
+
+import { useVoiz } from '@voiz/markets-sdk/react'
+import type { Address } from 'viem'
+
+export function BuyButton({
+  outcomeToken,
+  user,
+  amountIn,
+}: {
+  outcomeToken: Address
+  user: Address
+  amountIn: bigint
+}) {
+  const { client } = useVoiz()
+
+  async function onBuy() {
+    const pool = client.pool(outcomeToken)
+    const quote = await pool.quoteTrade({ side: 'buy', amountIn })
+
+    if (!quote.withinRange) {
+      // Cap was applied — use quote.amountIn / quote.maxAmountIn in the UI
+      console.warn(quote.message ?? 'Size exceeds in-range liquidity')
+    }
+
+    const minAmountOut = (quote.amountOut * 99n) / 100n // example 1% slip
+    await pool.swap({
+      side: 'buy',
+      amountIn: quote.amountIn,
+      minAmountOut,
+      user,
+    })
+  }
+
+  return <button onClick={onBuy}>Buy</button>
+}
+```
+
+## Where to go next
+
+- [Key concepts](/concepts) — Client → Market → Pool → User, indexer vs RPC
+- [Trade guide](/guides/trade) — deeper quote/swap behavior
+- [Seed guide](/guides/seed) — `quoteSeed` → `market.seed`

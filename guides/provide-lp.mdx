@@ -1,0 +1,78 @@
+---
+title: "Provide liquidity"
+description: "Add LP across outcomes with market.addLiquidity"
+---
+
+You put in one collateral amount (`credits`). Half becomes outcome shares (a full set across every outcome); the rest pairs those shares in each open pool.
+
+Prefer `market.addLiquidity({ credits, owner, … })` over single-pool helpers.
+
+## Prerequisites
+
+- Market seeded (`seedStatus() === 'seeded'`) — uninitialized pools are skipped by default
+- Collateral covering the mint
+- Connected wallet as `owner`
+
+## Steps
+
+### 1. Get the market
+
+```tsx
+import { useVoiz } from '@voiz/markets-sdk/react'
+import { parseUnits } from 'viem'
+import { useState } from 'react'
+
+const { client } = useVoiz()
+const [progress, setProgress] = useState('')
+
+const market = client.market(marketAddress)
+const summary = await market.summary()
+```
+
+### 2. Add liquidity across outcomes
+
+```tsx
+const credits = parseUnits('50', 18)
+
+const {
+  splitAmount,
+  pairCollateral,
+  shareCollateral,
+  splitResult,
+  outcomeResults,
+} = await market.addLiquidity({
+  credits,
+  owner: yourAddress,
+  outcomeLabels: summary?.outcomes, // nicer progress strings
+  setProgress, // e.g. "Minting shares…", "Providing to Yes (1/2)…"
+  // continueOnError: true,
+  // onOutcomeError: (err, { message }) => toast(message),
+})
+```
+
+Useful knobs:
+
+| Param | Role |
+| --- | --- |
+| `outcomeTokens` | Override wrapped tokens (defaults from private snapshot / summary) |
+| `skipUninitialized` | Default `true` — skip pools that aren't open |
+| `continueOnError` | Skip failed outcome batches instead of aborting |
+| `forceApprovals` | Force approval calls (default is already aggressive) |
+
+### 3. Exit LP later
+
+Burn an NFT position on the **client** (not on market):
+
+```tsx
+await client.burn({
+  tokenId: position.tokenId,
+  outcomeToken: position.outcomeToken,
+  recipient: yourAddress,
+})
+```
+
+Find open LP with `client.user(addr).lpPositions(…)` — see [Positions](/guides/positions).
+
+## Tip
+
+`credits` is the total collateral you spend. Tiny amounts fail with “Amount too small…”. Prefer across-outcomes LP for product UX.
