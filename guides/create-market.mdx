@@ -36,7 +36,7 @@ const { result, hashes, marketAddress } = await client.createMarket({
   outcomes: ['Yes', 'No'],
   resolverKind: 'admin',
   marketAdmin: yourAddress as Address,
-  // optional: category, lang, protocolBips, creatorBips, referrerBips
+  // optional: category, lang, creatorBips, referrerBips
 })
 
 if (!marketAddress) {
