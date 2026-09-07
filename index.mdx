@@ -1,64 +1,55 @@
 ---
-title: "Introduction"
-description: "TypeScript SDK for Voiz markets on EVM"
+title: "VOIZ Markets SDK"
+description: "One client. A living market. Crypto stays underneath."
 ---
 
-`@voiz/markets-sdk` is the TypeScript SDK for Voiz markets on EVM. List markets, seed pools, trade, add liquidity, and read positions — with viem under the hood.
+VOIZ turns a question into a live market. This SDK is how you talk to that market: one client, then a market, a pool, or a user. Viem is underneath. You do not assemble calldata.
+
+```ts
+client.listMarkets()
+client.market(address)   // summary, metadata, seed, resolve, LP
+client.pool(outcomeToken) // quote, swap
+client.user(owner)        // trades, shares, LP NFTs
+```
+
+A **market** is the protocol object. **Metadata** (description, resolution rules, images) is a separate **read** on that same market — it is not mixed into the catalog. You **write** it by passing `metadata` into `createMarket`.
 
 ## Install
 
 <CodeGroup>
 
 ```bash npm
-npm install @voiz/markets-sdk viem
+npm install @voiz-digital/markets-sdk viem
 ```
 
 ```bash pnpm
-pnpm add @voiz/markets-sdk viem
+pnpm add @voiz-digital/markets-sdk viem
 ```
 
 ```bash yarn
-yarn add @voiz/markets-sdk viem
+yarn add @voiz-digital/markets-sdk viem
 ```
 
 </CodeGroup>
 
-React apps also need the React peer (optional for vanilla viem):
+React apps also want `react`, then import `@voiz-digital/markets-sdk/react`.
 
-```bash
-npm install react
-```
-
-Import paths:
-
-- `@voiz/markets-sdk` — `VoizMarketsClient`, helpers (`quoteSeed`, `normalizeOddsBps`, `getAddresses`), types, `erc20Abi`
-- `@voiz/markets-sdk/react` — `VoizProvider`, `useVoiz`
-
-## Mental model
-
-Access everything through a client, then drill down:
-
-```ts
-client.market(address)  // status, seed, resolve, LP across outcomes
-client.pool(token)      // quoteTrade, swap
-client.user(address)    // trades, sharePositions, LP
-```
-
-Writes use an injected `sendCalls` (or a `walletClient` fallback). Call `market.seed`, `pool.swap`, and similar — the client submits for you.
-
-## Next steps
+## Next
 
 <CardGroup cols={2}>
-  <Card title="Key concepts" href="/concepts">
-    Client → Market → Pool → User, quotes vs writes, indexer vs RPC.
+  <Card title="How to think about it" href="/concepts">
+    Client, market, pool, user — and where metadata lives.
   </Card>
-  <Card title="Quickstart: React / Next.js" href="/quickstart-react">
-    Wrap your app with `VoizProvider`, then use `useVoiz().client`.
+  <Card title="How the protocol works" href="/protocol">
+    Complete sets, Uniswap LPs, and the rebalancer.
   </Card>
-  <Card title="Quickstart: vanilla viem" href="/quickstart-viem">
-    Construct `VoizMarketsClient` without React.
+  <Card title="React / Next.js" href="/quickstart-react">
+    Wrap the app, grab `useVoiz().client`, list and trade.
+  </Card>
+  <Card title="Vanilla viem" href="/quickstart-viem">
+    Scripts and backends: construct the client yourself.
   </Card>
   <Card title="Create a market" href="/guides/create-market">
-    Step-by-step flows after you are set up.
+    Create, describe, then seed.
   </Card>
 </CardGroup>

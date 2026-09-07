@@ -1,66 +1,50 @@
 ---
 title: "Seed a market"
-description: "Initialize outcome pools with quoteSeed and market.seed"
+description: "quoteSeed to preview, market.seed to open the pools."
 ---
 
-Open the pools so people can trade — quote collateral first, then call `market.seed`.
+Seeding is how a market becomes tradable. Quote the collateral first (pure math), then call `market.seed`. There is no `client.seedMarket`.
 
-There is **no** `client.seedMarket`. Seeding always lives on the market instance: `client.market(addr).seed(…)`.
+## You need
 
-## Prerequisites
+The market address, enough collateral for `quoteSeed(…).totalCollateral`, and `owner` as the connected wallet.
 
-- A created market address and its outcome (wrapped) tokens
-- Collateral ≥ `quoteSeed(…).totalCollateral`
-- Connected wallet as `owner`
+## 1. Quote
 
-## Steps
+Odds are percents. We turn them into basis points that sum to 10_000 (each outcome 1%–99%).
 
-### 1. Normalize odds and quote
-
-Odds are basis points that sum to ~10_000 (keep each outcome between 1% and 99%). Normalize, then quote:
-
-```tsx
-import { normalizeOddsBps, quoteSeed } from '@voiz/markets-sdk'
+```ts
+import { normalizeOddsBps, quoteSeed } from '@voiz-digital/markets-sdk'
 import { parseUnits } from 'viem'
-import { useVoiz } from '@voiz/markets-sdk/react'
 
-const { client } = useVoiz()
-
-const seedWei = parseUnits('100', 18) // match your collateral decimals
-const oddsBps = normalizeOddsBps([60, 40]) // e.g. 60% / 40%
+const seedWei = parseUnits('100', 18) // match collateral decimals
+const oddsBps = normalizeOddsBps([60, 40])
 
 const { splitAmount, poolCollateral, totalCollateral } = quoteSeed({
   seedWei,
   oddsBps,
 })
-// Show totalCollateral in the UI before the user confirms.
+// Show totalCollateral before they confirm — that is what they lock, not just seedWei.
 ```
 
-### 2. Seed the market
+This works **before** the market exists. Handy on the create screen.
 
-```tsx
+## 2. Seed
+
+```ts
 const market = client.market(marketAddress)
 
-const {
-  plan,
-  splitResult,
-  outcomeResults,
-  splitHashes,
-  outcomeHashes,
-} = await market.seed({
-  outcomeTokens, // real outcomes only — not Invalid
+await market.seed({
   seedWei,
   oddsBps,
   owner: yourAddress,
 })
 ```
 
-`seed` splits once, then submits **one batch per outcome**. Check progress anytime:
+That is **one** `sendCalls` batch: split + every outcome init/mint. On AA, one UserOp. On a plain wallet, still one signature per inner call. Pools that are already open skip `initialize`.
 
-```tsx
-const status = await market.seedStatus() // 'none' | 'partial' | 'seeded'
+Outcome tokens default from the market; pass `outcomeTokens` if you already loaded them (real outcomes only — not Invalid).
+
+```ts
+await market.seedStatus() // 'none' | 'partial' | 'seeded'
 ```
-
-## Tip
-
-`quoteSeed` only needs `seedWei` + `oddsBps` — safe before you have tokens. Fund `totalCollateral` (split + pool side), not just `seedWei`. Same call works without React via `client.market(addr).seed(…)`.

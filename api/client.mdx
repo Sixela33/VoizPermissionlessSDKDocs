@@ -1,30 +1,17 @@
 ---
 title: "Client"
-description: "VoizMarketsClient — factories, catalog, balances, create / redeem / burn"
+description: "VoizMarketsClient — the thing you construct. Everything else hangs off it."
 ---
 
-Core of the SDK — addresses, factories for market / pool / user, catalog, balances, and create / redeem / burn.
-
-Import from `@voiz/markets-sdk`. Prefer instance methods and `client.market|pool|user` with a viem `WalletClient` or injected `sendCalls`. Call encoding and submission stay internal.
-
-## Construction
-
-### VoizMarketsClient
+Import from `@voiz-digital/markets-sdk`. In React, take `useVoiz().client` instead of constructing by hand.
 
 ```ts
-class VoizMarketsClient {
-  readonly chainId: number
-  readonly addresses: ChainAddresses
-  readonly publicClient?: PublicClient
-  readonly walletClient?: WalletClient
-
-  constructor(config?: ClientConfig)
-}
+const client = new VoizMarketsClient({
+  chainId,
+  publicClient,
+  walletClient, // or sendCalls
+})
 ```
-
-In React, prefer `useVoiz().client` over constructing by hand.
-
-### ClientConfig
 
 ```ts
 type ClientConfig = {
@@ -32,240 +19,74 @@ type ClientConfig = {
   addresses?: AddressOverrides
   publicClient?: PublicClient
   walletClient?: WalletClient
-  /**
-   * Optional custom sender. When set, high-level write methods use it
-   * instead of sequential `walletClient.sendTransaction`.
-   */
   sendCalls?: SendCalls
 }
 ```
 
-### withAddresses
-
-Returns a new client with address overrides merged into the current map.
-
-```ts
-const staging = client.withAddresses({ hook: STAGING_HOOK })
-```
-
-```ts
-// returns
-VoizMarketsClient
-```
-
 ## Factories
 
-`VoizMarket`, `VoizPool`, and `VoizUser` are **not** root-exported — obtain them here.
-
-### market
-
-`VoizMarket` at `address`.
+`VoizMarket` / `VoizPool` / `VoizUser` are not package-root exports.
 
 ```ts
-const market = client.market(marketAddress)
-```
-
-```ts
-// returns
-VoizMarket
-```
-
-### pool
-
-`VoizPool` for an outcome token (optional collateral override).
-
-```ts
-const pool = client.pool(outcomeToken)
-// or client.pool(outcomeToken, collateralToken)
-```
-
-```ts
-// returns
-VoizPool
-```
-
-### user
-
-`VoizUser` at `address` (trades / share positions / LP).
-
-```ts
-const user = client.user(walletAddress)
-```
-
-```ts
-// returns
-VoizUser
+client.market(marketAddress)
+client.pool(outcomeToken)
+client.user(walletAddress)
 ```
 
 ## Catalog
 
-### listMarketAddresses
-
-On-chain factory market list (zeros filtered out).
-
 ```ts
-const addresses = await client.listMarketAddresses()
+await client.listMarkets()
+// { markets, source: "indexer" | "rpc", usedFallback }
 ```
 
-```ts
-// returns
-Promise<Address[]>
-```
-
-### isMarket
-
-Whether `address` is in the live factory market list.
+`markets` is protocol-only `MarketSummary[]`. Pictures: `client.market(addr).metadata()`.
 
 ```ts
-const ok = await client.isMarket(marketAddress)
-```
-
-```ts
-// returns
-Promise<boolean>
-```
-
-### listMarkets
-
-Homepage catalog: indexer-first market summaries, with RPC factory + load fallback.
-
-```ts
-const { markets, source, usedFallback } = await client.listMarkets()
-```
-
-```ts
-// returns
-Promise<{
-  markets: Array<{
-    address: Address
-    marketName: string
-    outcomes: string[]
-    resolver: Address
-    resolverKind: "admin" | "committee"
-    marketAdmin: Address
-    threshold: number | null
-    resolutionMode: number
-    conditionId: `0x${string}`
-    resolved: boolean
-    winningOutcome: number | null
-    wrappedTokens: Address[]
-    numOutcomes: number
-    imageUri: string | null
-    outcomeImageUris: (string | null)[]
-    outcomeStats?: Array<{
-      index: number
-      impliedPct: number | null
-      liquidityCollateral: bigint | null
-      volumeCollateral: bigint | null
-    }>
-  }>
-  source: "indexer" | "rpc"
-  usedFallback: boolean
-}>
-```
-
-### ListMarketsResult
-
-```ts
-type ListMarketsResult = {
-  markets: MarketSummary[]
-  source: "indexer" | "rpc"
-  /** True when ponder was attempted and failed, so RPC was used. */
-  usedFallback: boolean
-}
-```
-
-### getErc20Balance
-
-ERC-20 `balanceOf` for any token.
-
-```ts
-const bal = await client.getErc20Balance(token, owner)
-```
-
-```ts
-// returns
-Promise<bigint>
-```
-
-### getCollateralBalance
-
-Collateral (`addresses.collateral`) balance for `owner`.
-
-```ts
-const bal = await client.getCollateralBalance(owner)
-```
-
-```ts
-// returns
-Promise<bigint>
+await client.listMarketAddresses()
+await client.isMarket(address)
+await client.getCollateralBalance(owner)
+await client.getErc20Balance(token, owner)
 ```
 
 ## Writes
 
 ### createMarket
 
-Creates a market and resolves `marketAddress` from receipts / hashes when possible.
+Deploys the market, then — if you passed a `metadata` bag with copy or images — uploads files and sets `metadataURI`. Empty metadata is skipped. Seed is still a second call.
 
 ```ts
-const { result, hashes, marketAddress } = await client.createMarket({
-  marketName: "Will it rain?",
-  outcomes: ["Yes", "No"],
+const { marketAddress, metadataUri } = await client.createMarket({
+  marketName,
+  outcomes,
   resolverKind: "admin",
-  marketAdmin: admin,
+  marketAdmin,
+  metadata: {
+    description,
+    resolutionCriteria,
+    image,          // File | Blob | url | null
+    outcomeImages,  // same, per outcome
+  },
 })
 ```
 
 ```ts
-// returns
 Promise<{
-  result: unknown // opaque sender result
+  result: unknown
   hashes: Hash[]
   marketAddress?: Address
+  metadataUri?: string
 }>
 ```
 
-Opaque sender `result`, extracted `hashes`, and `marketAddress` when it can be parsed from receipts / waited hashes.
+If metadata is present but the new address cannot be parsed from the receipt, it throws instead of leaving a silent unpublished market.
 
-### redeem
-
-Redeems outcome tokens for collateral after resolution (or as allowed by the market).
+### Other writes
 
 ```ts
-const { result, hashes } = await client.redeem({
-  marketAddress,
-  outcomeTokens,
-  indexes,
-  amounts,
-  owner,
-})
+await client.redeem({ marketAddress, indexes, amounts, owner })
+await client.burn({ tokenId, outcomeToken, recipient })
+await client.mintCollateral({ to, amount }) // testnet collateral, if the token exposes mint
 ```
 
-```ts
-// returns
-Promise<{
-  result: unknown // opaque sender result
-  hashes: Hash[]
-}>
-```
-
-### burn
-
-Burns an LP NFT position via the PositionManager (same send path as redeem / swap).
-Pass `outcomeToken` (and optional `collateralToken`); the SDK builds the Uniswap v4 PoolKey internally.
-
-```ts
-const { result, hashes } = await client.burn({
-  tokenId,
-  outcomeToken,
-  recipient: owner,
-})
-```
-
-```ts
-// returns
-Promise<{
-  result: unknown // opaque sender result
-  hashes: Hash[]
-}>
-```
+Prefer `market.redeem` when you already have the market handle. `createMarket` is the one write that must live on the client — there is no market yet.

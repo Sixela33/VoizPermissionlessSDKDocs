@@ -1,11 +1,9 @@
 ---
 title: "React"
-description: "VoizProvider, useVoiz, and React context types from @voiz/markets-sdk/react"
+description: "VoizProvider builds the client. Your UI just calls useVoiz()."
 ---
 
-React wiring for the SDK — the provider builds a `VoizMarketsClient`; your UI should go through `useVoiz().client`.
-
-Import from `@voiz/markets-sdk/react`. Inject `sendCalls` on `<VoizProvider>` for Privy / AA; prefer high-level client / market / pool methods over assembling calls yourself.
+Import from `@voiz-digital/markets-sdk/react`. Pass `sendCalls` for AA. After that, screens only need `const { client } = useVoiz()`.
 
 ## Provider
 

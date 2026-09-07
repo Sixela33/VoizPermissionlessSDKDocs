@@ -1,82 +1,32 @@
 ---
 title: "Resolve, merge, and redeem"
-description: "Settle a market and cash out shares or complete sets"
+description: "Call the winner, then cash out."
 ---
 
-Report the winner, then cash out — winners redeem shares; anyone with a full set can merge back to collateral anytime (even before resolve).
+Anyone with a **complete set** (every outcome including Invalid) can `merge` back to collateral anytime. Redeeming winning shares waits until the market is resolved.
 
-| Action | Where |
-| --- | --- |
-| Resolve / merge | `client.market(addr)` |
-| Redeem / burn LP | `client.redeem` / `client.burn` |
-
-## Prerequisites
-
-- For resolve: you're allowed (`await market.canResolve(yourAddress)`)
-  - **admin** — you are `marketAdmin` (SDK passes `requiredSigner` automatically)
-  - **committee** — you are a voter; threshold votes finalize
-- For redeem: market resolved and you hold winning outcome tokens
-- For merge: equal amounts of every wrapped token including Invalid
-
-## Steps
-
-### 1. Resolve
-
-```tsx
-import { parseUnits } from 'viem'
-import { useVoiz } from '@voiz/markets-sdk/react'
-
-const { client } = useVoiz()
+```ts
 const market = client.market(marketAddress)
 
-const ok = await market.canResolve(yourAddress)
-if (!ok) throw new Error('Not allowed to resolve')
+if (!(await market.canResolve(yourAddress))) {
+  throw new Error('Not allowed to resolve')
+}
 
-await market.resolve({
-  outcomeIndex: 0, // 0..numOutcomes-1, or numOutcomes for Invalid
-  // requiredSigner: adminEoa, // optional override for dual-wallet apps
-})
-```
+await market.resolve({ outcomeIndex: 0 }) // or numOutcomes for Invalid
 
-### 2. Merge complete sets (optional)
+await market.merge({ amount, owner: yourAddress })
 
-Burn one of each outcome (incl. Invalid) back to collateral:
-
-```tsx
-await market.merge({
-  amount: parseUnits('5', 18),
-  owner: yourAddress,
-})
-```
-
-### 3. Redeem winning shares
-
-```tsx
 const summary = await market.summary()
 const win = summary!.winningOutcome
-if (win == null) throw new Error('Not resolved yet')
-
-const amount = await client.getErc20Balance(
-  summary.wrappedTokens[win]!,
-  yourAddress
-)
-
-await client.redeem({
-  marketAddress,
-  outcomeTokens: summary.wrappedTokens,
-  indexes: [BigInt(win)],
+await market.redeem({
+  indexes: [BigInt(win!)],
   amounts: [amount],
   owner: yourAddress,
 })
 ```
 
-### 4. UI after resolution
+Admin markets: you must be `marketAdmin`. The SDK passes that as `requiredSigner` so an AA app can route to the admin key. A plain wallet just signs with whoever is connected.
 
-```tsx
-const { rows } = await market.prices()
-// Winner shows priceCt 1 / impliedPct 100; losers 0.
-```
+Committee markets: you vote; `threshold` votes finish it.
 
-## Tip
-
-Resolve and merge live on **market**; redeem and LP burn live on **client**. Don't call resolve unless `canResolve` is true — admin markets need the admin key even if a smart wallet is the app default. Committee markets need enough votes to cross `threshold`.
+After resolve, `market.prices()` shows the winner at 100%.

@@ -1,78 +1,29 @@
 ---
 title: "Provide liquidity"
-description: "Add LP across outcomes with market.addLiquidity"
+description: "One collateral amount, split across every open outcome."
 ---
 
-You put in one collateral amount (`credits`). Half becomes outcome shares (a full set across every outcome); the rest pairs those shares in each open pool.
+You put in `credits`. Half becomes a complete set of shares; the rest pairs those shares in each open pool. That is `market.addLiquidity` — use it instead of per-pool helpers.
 
-Prefer `market.addLiquidity({ credits, owner, … })` over single-pool helpers.
+For inventory, fees, resolution, and leftover Invalid, read [How liquidity provision works](/guides/liquidity) first.
 
-## Prerequisites
+## You need
 
-- Market seeded (`seedStatus() === 'seeded'`) — uninitialized pools are skipped by default
-- Collateral covering the mint
-- Connected wallet as `owner`
+A seeded market (`seedStatus() === 'seeded'`), enough collateral, and `owner` as the connected wallet. Unopened pools are skipped by default.
 
-## Steps
-
-### 1. Get the market
-
-```tsx
-import { useVoiz } from '@voiz/markets-sdk/react'
-import { parseUnits } from 'viem'
-import { useState } from 'react'
-
-const { client } = useVoiz()
-const [progress, setProgress] = useState('')
-
+```ts
 const market = client.market(marketAddress)
 const summary = await market.summary()
-```
-
-### 2. Add liquidity across outcomes
-
-```tsx
 const credits = parseUnits('50', 18)
 
-const {
-  splitAmount,
-  pairCollateral,
-  shareCollateral,
-  splitResult,
-  outcomeResults,
-} = await market.addLiquidity({
+await market.addLiquidity({
   credits,
   owner: yourAddress,
-  outcomeLabels: summary?.outcomes, // nicer progress strings
-  setProgress, // e.g. "Minting shares…", "Providing to Yes (1/2)…"
-  // continueOnError: true,
-  // onOutcomeError: (err, { message }) => toast(message),
+  outcomeLabels: summary?.outcomes, // "Providing to Yes (1/2)…"
+  setProgress,
 })
 ```
 
-Useful knobs:
+Useful knobs: `continueOnError` to skip a failed outcome instead of aborting; `skipUninitialized` (default true). Tiny `credits` fail with “Amount too small…”.
 
-| Param | Role |
-| --- | --- |
-| `outcomeTokens` | Override wrapped tokens (defaults from private snapshot / summary) |
-| `skipUninitialized` | Default `true` — skip pools that aren't open |
-| `continueOnError` | Skip failed outcome batches instead of aborting |
-| `forceApprovals` | Force approval calls (default is already aggressive) |
-
-### 3. Exit LP later
-
-Burn an NFT position on the **client** (not on market):
-
-```tsx
-await client.burn({
-  tokenId: position.tokenId,
-  outcomeToken: position.outcomeToken,
-  recipient: yourAddress,
-})
-```
-
-Find open LP with `client.user(addr).lpPositions(…)` — see [Positions](/guides/positions).
-
-## Tip
-
-`credits` is the total collateral you spend. Tiny amounts fail with “Amount too small…”. Prefer across-outcomes LP for product UX.
+Leave later with `client.burn({ tokenId, outcomeToken, recipient })`. Find open LP via `client.user(addr).lpPositions(…)`.

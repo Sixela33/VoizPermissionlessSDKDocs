@@ -1,0 +1,73 @@
+---
+title: "How VOIZ works"
+description: "A living market: Uniswap LPs as the book, a rebalancer that keeps prices honest, VOIZ underneath."
+---
+
+VOIZ is a prediction market your community can feel. Under the hood it is three simple pieces:
+
+1. **A complete set** — one unit of collateral is always Yes + No + … + Invalid.
+2. **Uniswap LPs** — they *are* the book. Each outcome has its own pool against collateral.
+3. **A rebalancer** — when those pools drift, it trades the complete set through them and pays LPs volume.
+
+You launch a question. People trade. VOIZ takes a share of the fee only when the market actually trades. LPs earn the pool fee, rebalancer flow, and the **VOIZ token** for being in the book. Settlement stays on-chain.
+
+## The peg
+
+```
+1 collateral  ⇄  Yes + No + … + Invalid
+```
+
+Split and merge anytime you hold the full set. After resolve, the winner is 1 and the rest are 0. Until then, that identity is true even if the Uniswap prices have wandered.
+
+## The book
+
+Each real outcome is a Uniswap v4 pool vs collateral (0.30% LP fee, prices in `(0, 1]`). Invalid is not pooled.
+
+A buy on Yes is not minting a set. It is taking Yes out of LP inventory and putting collateral in. Because the pools are independent, a wave of Yes buyers lifts Yes without automatically lowering No. The book can go **rich** (prices sum above 1) or **cheap** (below 1).
+
+That gap is what the rebalancer trades. [How LPs work](/guides/liquidity).
+
+## The rebalancer
+
+It holds collateral and a buffer of Invalid. Both moves must be profitable after fees:
+
+**Rich book (sum > 1).** Split 1 collateral. Sell each real outcome into its pool. Keep Invalid. Selling pushes prices down.
+
+**Cheap book (sum < 1).** Buy each real outcome, add Invalid, merge back to 1 collateral. Buying lifts prices up.
+
+```
+rich:    split → sell into LPs → profit
+cheap:   buy from LPs + Invalid → merge → profit
+```
+
+Every hop is a Uniswap swap. **That is volume for LPs** — the same 0.30% as a person trading, on top of community flow. A quiet book still pays when VOIZ rebalances it.
+
+The executor does this in one transaction and reverts if it would lose money. It only fires when the misprice is larger than fees, so small gaps can sit.
+
+## Who gets paid
+
+On a swap:
+
+| Cut | Who |
+| --- | --- |
+| **1%** of collateral notional | VOIZ (and creator / referrer if the market was set up that way) |
+| **0.30%** pool fee | LPs in range — traders *and* rebalancer volume |
+| **VOIZ token** | LPs, for providing liquidity |
+
+VOIZ takes a share only on markets that trade. LPs do not receive the 1%. Numbers: [Revenue calculation](/guides/liquidity#revenue-calculation).
+
+## From spark to settled
+
+1. **Create** — the question becomes a market. Optional metadata rides along.
+2. **Seed** — first LP, at the opening odds. The book is live from that moment.
+3. **Trade** — people swap in one outcome pool at a time.
+4. **Rebalance** — whenever prices drift off 1, complete-set flow hits every pool.
+5. **Resolve** — the outcome is published. Shares are now 0 or 1.
+
+**Trading in the LPs stops at resolve on purpose.** The Uniswap curve would still quote 0.62 while redemption is 1 or 0. Anyone could buy winners cheap or dump losers into the pool and pick the LP clean. The hook shuts swaps so that cannot happen. Fee income and rebalancer volume stop with them. LPs burn the position, then redeem or merge.
+
+## What this is not
+
+Not a single pool with every outcome inside. Not an order book. Not a rebalance on every click — Uniswap quotes first; VOIZ rebalances when it pays.
+
+Next: [liquidity](/guides/liquidity) · [trade](/guides/trade)

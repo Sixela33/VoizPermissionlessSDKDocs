@@ -1,11 +1,11 @@
 {
   "$schema": "https://mintlify.com/docs.json",
   "theme": "mint",
-  "name": "Voiz Markets SDK",
+  "name": "VOIZ Markets SDK",
   "colors": {
-    "primary": "#16A34A",
-    "light": "#07C983",
-    "dark": "#15803D"
+    "primary": "#30A8F8",
+    "light": "#10C8A8",
+    "dark": "#0B1C3A"
   },
   "favicon": "/favicon.svg",
   "navigation": {
@@ -15,6 +15,7 @@
         "pages": [
           "index",
           "concepts",
+          "protocol",
           "quickstart-react",
           "quickstart-viem"
         ]
@@ -26,6 +27,7 @@
           "guides/seed",
           "guides/trade",
           "guides/positions",
+          "guides/liquidity",
           "guides/provide-lp",
           "guides/resolve"
         ]

@@ -1,64 +1,49 @@
 ---
 title: "Trade an outcome"
-description: "Quote with pool.quoteTrade, then swap"
+description: "Quote live, then swap. Never size from display prices."
 ---
 
-Buy or sell an outcome against collateral — quote live, then swap.
+You trade **one outcome against collateral**. The handle is the outcome token, not the market.
 
-Always size with `client.pool(outcomeToken).quoteTrade`, then submit with `.swap`. Use `prices` / `MarketSummary` for mid prices in the UI — **not** for trade sizing.
+`prices()` is for the UI. `quoteTrade` is for the button.
 
-## Prerequisites
+## You need
 
-- Seeded market (`seedStatus() === 'seeded'`)
-- Collateral (buy) or outcome tokens (sell)
-- Outcome token from `summary.wrappedTokens[index]` (real outcomes only)
+A seeded market, collateral (buy) or shares (sell), and `summary.wrappedTokens[index]` for a real outcome.
 
-## Steps
+## 1. Get the pool
 
-### 1. Get the pool
-
-```tsx
-import { useVoiz } from '@voiz/markets-sdk/react'
-import { parseUnits } from 'viem'
-
-const { client } = useVoiz()
-
+```ts
 const summary = await client.market(marketAddress).summary()
-const outcomeToken = summary!.wrappedTokens[0]! // e.g. Yes
+const outcomeToken = summary!.wrappedTokens[0]!
 const pool = client.pool(outcomeToken)
 ```
 
-### 2. Quote exact-in
+## 2. Quote exact-in
 
-```tsx
-const amountIn = parseUnits('10', 18)
-
+```ts
 const quote = await pool.quoteTrade({
   side: 'buy', // or 'sell'
   amountIn,
 })
 
-// quote.amountOut applies to quote.amountIn (may be capped)
-// quote.withinRange === false → too large for the pool's current price range
-// quote.maxAmountIn / quote.message for UI
-// quote.spotPrice, quote.priceAfter, quote.priceAboveNinetyNineCents
+// quote.amountOut is for quote.amountIn (may be smaller than you asked)
+// withinRange === false → you asked more than the prediction range allows
 ```
 
-If `withinRange` is false, size the swap to `quote.amountIn` (or `maxAmountIn`), not the original request.
+If it capped you, swap `quote.amountIn`, not the original number.
 
-### 3. Swap
+## 3. Swap
 
-```tsx
-const minAmountOut = (quote.amountOut * 99n) / 100n // example 1% slippage
-
+```ts
 await pool.swap({
   side: 'buy',
   amountIn: quote.amountIn,
-  minAmountOut,
-  user: yourAddress, // must be the signing wallet / AA that holds the tokens
+  minAmountOut: (quote.amountOut * 99n) / 100n, // your slippage
+  user: yourAddress, // token holder = AA smart wallet, not a nested EOA
 })
 ```
 
-## Tip
+Buy is collateral → outcome. Sell is the reverse. Quote again right before you send — mids from the indexer can be stale.
 
-Buys are collateral → outcome; sells are the reverse. Don't drive trade buttons from `prices` — those can be indexer-stale. Always `quoteTrade` right before `swap`. Vanilla `client.pool(token)` works the same without `useVoiz`.
+A trade in **one** pool does not move the others. If the book’s prices no longer sum to ~1, the [rebalancer](/protocol) trades complete sets against Uniswap until they do.

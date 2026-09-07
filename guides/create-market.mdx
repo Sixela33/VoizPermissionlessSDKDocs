@@ -1,62 +1,50 @@
 ---
 title: "Create a market"
-description: "Deploy a new prediction market with client.createMarket"
+description: "Pass metadata on createMarket, then seed."
 ---
 
-Spin up a new market on-chain — you get an address you can seed, trade, and LP against next.
+The factory has to mint the market before anything can point at it. `createMarket` does that, then — if you passed `metadata` — uploads files and sets `metadataURI`. Seed is still a second call.
 
-## Prerequisites
+## You need
 
-- A working `VoizProvider` (or a plain `VoizMarketsClient` with `publicClient` plus `walletClient` / `sendCalls`)
-- Gas and a connected wallet that can send txs
+A client that can send (`walletClient` or `sendCalls`), and a wallet with gas.
 
-## Steps
+## Create (and describe)
 
-### 1. Grab the client
+Admin markets need `marketAdmin`. Committee markets need `voters` and `threshold`. `image` / `outcomeImages` can be a `File`, a `Blob`, or a public URL.
 
-```tsx
-import { useVoiz } from '@voiz/markets-sdk/react'
-
-const { client } = useVoiz()
-// Vanilla: `new VoizMarketsClient({ … })` works the same for createMarket.
-```
-
-### 2. Create the market
-
-Pass `CreateMarketParams`. Choose who settles it:
-
-- **`admin`** — set `marketAdmin` (required)
-- **`committee`** — set `voters` and `threshold` (1…voters.length)
-
-```tsx
-import type { Address } from 'viem'
-
-const { result, hashes, marketAddress } = await client.createMarket({
-  marketName: 'Will ETH flip BTC by 2027?',
+```ts
+const { marketAddress } = await client.createMarket({
+  marketName: 'Will ETH be above 5k?',
   outcomes: ['Yes', 'No'],
   resolverKind: 'admin',
-  marketAdmin: yourAddress as Address,
-  // optional: category, lang, creatorBips, referrerBips
+  marketAdmin: yourAddress,
+  metadata: {
+    description: '…',
+    resolutionCriteria: 'Coinbase ETH-USD at 23:59 UTC.',
+    image: marketImageFile,
+    outcomeImages: [yesFile, noFile],
+  },
 })
 
 if (!marketAddress) {
-  throw new Error('Market created but address not resolved from receipt')
+  throw new Error('Created, but the receipt did not include the new address')
 }
 
 const market = client.market(marketAddress)
 ```
 
-You get `{ result, hashes, marketAddress? }`. When a receipt or hash is around, the SDK pulls the new market address out for you.
+Skip `metadata` if you have nothing to publish. After the market is live, treat the document as frozen in the product UI. `market.setMetadata` still exists for a retry if the upload failed after create.
 
-### 3. Load a summary for the UI (optional)
+## Seed
 
-Use `MarketSummary` for list and detail screens — it's the object you render in the list:
+See [Seed liquidity](/guides/seed). Preview with `quoteSeed` first so the user knows how much collateral they will lock.
 
-```tsx
-const summary = await market.summary()
-// or catalog: const { markets } = await client.listMarkets()
+```ts
+import { normalizeOddsBps, quoteSeed } from '@voiz-digital/markets-sdk'
+
+const oddsBps = normalizeOddsBps([50, 50])
+const { totalCollateral } = quoteSeed({ seedWei, oddsBps })
+
+await market.seed({ seedWei, oddsBps, owner: yourAddress })
 ```
-
-## Tip
-
-If `marketAddress` is missing, wait for the receipt and retry, or pull `client.listMarketAddresses()` / `listMarkets()` and grab the newest one. Don't invent addresses. Next: [Seed liquidity](/guides/seed).

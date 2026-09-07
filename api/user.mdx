@@ -1,13 +1,15 @@
 ---
 title: "User"
-description: "VoizUser via client.user(addr) — trades, share positions, LP"
+description: "client.user(addr) — that wallet's fills, shares, and LP NFTs."
 ---
 
-Trades, share positions, and LP for one address. Obtain with `client.user(address)` — the `VoizUser` class is **not** a root export. Prefer this over raw indexer helpers.
+Indexer reads. Soft-fail to `[]` if Ponder is down.
 
 ```ts
-const { client } = useVoiz()
 const user = client.user(address)
+await user.trades()
+await user.sharePositions()
+await user.lpPositions({ market, wrappedTokens })
 ```
 
 ## Methods

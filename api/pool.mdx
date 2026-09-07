@@ -1,16 +1,15 @@
 ---
 title: "Pool"
-description: "VoizPool via client.pool(token) — state, quotes, and swap"
+description: "client.pool(outcomeToken) — one outcome against collateral."
 ---
 
-Pool state, trade quotes, and swap for one outcome–collateral pair. Obtain with `client.pool(outcomeToken, collateralToken?)` — the `VoizPool` class is **not** a root export.
-
-Use `quoteTrade` for trade quotes (not `market.prices`).
+You do not pass a market address here. The pool is the outcome token.
 
 ```ts
-const { client } = useVoiz()
 const pool = client.pool(outcomeToken)
 ```
+
+Size with `quoteTrade`. Display mids live on `market.prices()`.
 
 ## State
 

@@ -1,0 +1,175 @@
+---
+title: "How liquidity provision works"
+description: "You are the book. Earn swap fees, rebalancer volume, and VOIZ — and know when the market shuts."
+---
+
+On VOIZ, LPs **are** the market. You are not picking Yes or No. You hold both sides of every outcome pool so the community — and the [rebalancer](/protocol) — can trade through you.
+
+You get paid when they do: **0.30%** on volume that hits your range, **rebalancer flow** counted the same way, and the **VOIZ token** for being in the book. You also hold whatever mix is left when the question settles.
+
+Not financial advice. Size only what you can lose.
+
+## What you actually mint
+
+`credits` is one collateral number. The SDK splits it in half:
+
+```
+credits C
+├── C/2  →  complete set (Yes, No, …, and Invalid — each C/2)
+└── C/2  →  leftover collateral, divided evenly across open outcome pools
+```
+
+Each **real** outcome has its own Uniswap v4 pool against collateral. Invalid is minted in the complete set and **stays in your wallet** — there is no Invalid pool.
+
+For a binary market that is already 50 / 50, each pool is offered `C/2` outcome tokens and `C/4` collateral — equal value at a price of 0.50. The PositionManager then takes what the **current** price actually needs; the rest is leftover in your wallet.
+
+Seed (the first LP) sizes pool collateral from **odds**. Later `addLiquidity` does **not**: leftover collateral is split evenly, not by live implied probabilities. If the book is 90 / 10, one side of the mint will bind and you will be left holding extra tokens.
+
+The v4 position itself is concentrated in the prediction range: outcome prices in `(0, 1]`. That is the only range a well-formed market should trade. It is not Uniswap full-range.
+
+You receive one PositionManager NFT per outcome pool you minted into.
+
+## What you earn
+
+| Source | Who gets it |
+| ------ | ----------- |
+| Pool fee (`0.30%`) | LPs, in-range, on volume that hits your position — including [rebalancer](/protocol) flow |
+| **VOIZ token** | LPs — you get it for providing liquidity |
+| VOIZ fee (`1%` of collateral notional) | VOIZ (plus creator / referrer if the market was set up that way) |
+
+VOIZ takes a share only on markets that trade. That 1% is **not** yours.
+
+The 0.30% is. It is paid in the pool’s tokens as flow hits your range — community trades **and** rebalancer hops. When prices sum to more or less than 1, VOIZ trades a complete set through every outcome pool. That is extra volume for you, same fee as a person clicking Buy.
+
+The **VOIZ token** sits on top of that. `addLiquidity` does not mint it. You qualify by being LP.
+
+## Revenue calculation
+
+Only two things accrue to the LP. Do not add the hook skim into this math.
+
+```
+pool-fee revenue  ≈  0.30%  ×  Σ_i  (volume_i × your_share_i)
+```
+
+`volume_i` is notional that actually traded **in your range** in outcome pool `i` — traders plus [rebalancer](/protocol) hops — **before resolve**.  
+`your_share_i` is your in-range liquidity in that pool divided by all in-range liquidity there.
+
+Fees accrue in the pool’s tokens (a mix of collateral and that outcome). You realize them when you **burn** the NFT. After resolve, `volume_i` is zero: the hook has halted swaps so the LPs are not arbitraged against 0/1 redemption.
+
+**VOIZ token** is extra. It is not a percentage of volume and is not in this formula.
+
+### What you are not paid
+
+| Paid by the swap | Goes to |
+| ---------------- | ------- |
+| 0.30% pool fee | LPs in range |
+| 1% hook skim on collateral notional | Protocol (not you) |
+
+A 10,000 collateral-side swap does **not** earn you 130. The hook takes ~100. In-range LPs split ~30.
+
+### If you post `credits` and the book does 50,000 volume
+
+Take **50,000** of in-range volume before resolve (traders + rebalancer, summed across the outcome pools you are in). Same units as collateral.
+
+All LPs in those ranges split:
+
+```
+0.30% × 50,000 = 150
+```
+
+What **you** get is that 150 times your share of in-range liquidity — not times how much you deposited, except insofar as deposit size *is* your share.
+
+| Collateral you posted (`credits`) | You are the whole book (share = 100%) | You are 10% of the book |
+| --------------------------------- | ------------------------------------- | ----------------------- |
+| 1,000 | **150** (15.0% of what you posted) | **15** (1.5%) |
+| 5,000 | **150** (3.0%) | **15** (0.3%) |
+| 10,000 | **150** (1.5%) | **15** (0.15%) |
+| 50,000 | **150** (0.3%) | **15** (0.03%) |
+
+The fee in tokens is **fixed for a given volume and share**. Posting more collateral does not mint more than 150 from 50,000 of volume unless it also raises your share (or the book does more volume). A 1,000 seed that is the entire book and turns over 50× is a thin market, not a base case.
+
+A rebalancer pass of size `A` adds about `A` of volume in **each** real outcome pool. On a binary book that is 2A toward the 50,000, not a third income line.
+
+VOIZ token is not in this table. Inventory can erase the 150. After resolve the volume term is 0.
+
+### P&L is not revenue
+
+```
+P&L  ≈  pool-fee revenue  +  VOIZ token  −  inventory change  −  leftovers
+```
+
+Inventory change is the Uniswap mix shifting as probability moves (and as the rebalancer trades). Leftovers are unbound mint amounts and idle Invalid. A book that resolves tomorrow can show a small `volume` term and a large inventory term. The halt at resolve protects the remaining inventory from 0/1 arb; it also caps the fee term at whatever traded before that moment.
+
+These figures are a model of the fee tier and hook, not a forecast. Depth, range, and time-to-resolve dominate the result.
+
+## Risks
+
+LP is not a coupon you clip until you feel like leaving. The book can move against the inventory, and **the book can shut**.
+
+### Trading stops when the market resolves — otherwise LPs get arbitraged
+
+After payouts are set, every share is worth **exactly `1` or `0` collateral**. The Uniswap pool does not know that. It still quotes the last AMM price — 0.62, 0.19, whatever was on the book.
+
+If swaps kept running, that gap is free money against LP inventory:
+
+- **Winner still priced below 1** — buy it from the pool, redeem at 1, pocket the difference. Repeat until the pool is empty of cheap winners.
+- **Loser still priced above 0** — sell worthless shares into the pool, take collateral out. Repeat until LPs hold only losers.
+
+VOIZ therefore shuts swaps on those pools once payouts are set. The halt is **LP protection**, not a punishment. If the book stayed open, the community — and the rebalancer — would pick the inventory clean. So trading in the LPs **stops on purpose**.
+
+The cost of that protection:
+
+- No trader volume, no rebalancer volume, **no 0.30% fee** after resolve.
+- The NFT is no longer a quoting position. It is a bag of `1`s, `0`s, and leftover collateral until you **burn**, then **redeem** winners and/or **merge** complete sets (including Invalid in your wallet).
+
+Fee income only exists **between seed and resolve**. A market that resolves quickly can pay almost no volume relative to the inventory you posted — but leaving the pools open would be worse: the inventory itself would be picked off.
+
+### Inventory while the market is open
+
+Across-outcome LP is how you market-make the whole book without picking Yes or No. It is **not delta-neutral**. As implied probability moves, each pool leaves you holding more of the asset the market is dumping. You are the other side of every trader — and of every rebalance.
+
+### Even collateral vs live odds
+
+`addLiquidity` divides leftover collateral equally across open outcomes, not by live implied probabilities. On a 90 / 10 book, one side of the mint binds. Leftover tokens sit in your wallet until you merge, redeem, or trade them.
+
+### Idle Invalid
+
+The complete-set mint always prints Invalid. There is no Invalid pool, so those tokens never earn fees. Unwinding a full set later means you need the other outcomes back out of the NFTs.
+
+### Range
+
+Liquidity is only active inside `(0, 1]`. The hook will not let a mint sit on another tick range. An uninitialized, empty, or halted pool earns nothing.
+
+### Operational
+
+Approvals (Permit2), seed price, hook configuration, and factory version all have to match. Old market clones cannot be upgraded. Tiny `credits` revert. Contracts, oracles, and resolution can fail.
+
+This is not financial advice. Size only what you can lose.
+
+## Seed vs later LP
+
+| | Seed | `addLiquidity` |
+| --- | --- | --- |
+| When | Once, to open the pools | Anytime the pools are open |
+| Price | From the odds you quote | Live `slot0` |
+| Collateral per pool | Weighted by odds | Split evenly |
+| Initialize | Yes, if the pool is new | Skipped when already open |
+
+Seed is the first inventory at the opening book. Everything after that is adding to a live price.
+
+## How to exit
+
+1. `client.user(owner).lpPositions({ market })` — find the NFTs.
+2. `client.burn({ tokenId, outcomeToken, recipient })` — take tokens out of the pool.
+3. `market.merge` if you hold a complete set (including Invalid).
+4. `market.redeem` after resolution for winning shares.
+
+Do not assume burn + redeem is one click. Invalid and leftover inventory are separate balances.
+
+## In the SDK
+
+```ts
+await market.addLiquidity({ credits, owner })
+```
+
+See [Provide liquidity](/guides/provide-lp) for parameters, progress callbacks, and skipping failed outcomes.
