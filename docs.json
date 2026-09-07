@@ -28,6 +28,7 @@
           "guides/trade",
           "guides/positions",
           "guides/liquidity",
+          "guides/lp-calculator",
           "guides/provide-lp",
           "guides/resolve"
         ]

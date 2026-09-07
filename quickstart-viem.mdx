@@ -93,7 +93,12 @@ You can pass `outcomeTokens` if you already have them; otherwise the market load
 ## Quote and swap
 
 ```ts
-const pool = client.pool(outcomeToken)
+const outcomeIndex = 0
+const outcomeToken = summary.wrappedTokens[outcomeIndex]!
+const pool = client.pool(outcomeToken, {
+  market: marketAddress,
+  outcomeIndex,
+})
 const quote = await pool.quoteTrade({ side: 'buy', amountIn })
 
 await pool.swap({

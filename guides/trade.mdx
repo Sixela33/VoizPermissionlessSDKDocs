@@ -1,22 +1,26 @@
 ---
 title: "Trade an outcome"
-description: "Quote live, then swap. Never size from display prices."
+description: "Quote live against the AMM, then swap. Never size from display prices."
 ---
 
-You trade **one outcome against collateral**. The handle is the outcome token, not the market.
+You trade **one named outcome against collateral** on the market's OutcomeAmm. The handle is the outcome token plus `{ market, outcomeIndex }`.
 
 `prices()` is for the UI. `quoteTrade` is for the button.
 
 ## You need
 
-A seeded market, collateral (buy) or shares (sell), and `summary.wrappedTokens[index]` for a real outcome.
+A seeded market, collateral (buy) or shares (sell), and `summary.wrappedTokens[index]` for a **named** outcome. Invalid is not tradable.
 
 ## 1. Get the pool
 
 ```ts
 const summary = await client.market(marketAddress).summary()
-const outcomeToken = summary!.wrappedTokens[0]!
-const pool = client.pool(outcomeToken)
+const outcomeIndex = 0
+const outcomeToken = summary!.wrappedTokens[outcomeIndex]!
+const pool = client.pool(outcomeToken, {
+  market: marketAddress,
+  outcomeIndex,
+})
 ```
 
 ## 2. Quote exact-in
@@ -28,7 +32,7 @@ const quote = await pool.quoteTrade({
 })
 
 // quote.amountOut is for quote.amountIn (may be smaller than you asked)
-// withinRange === false → you asked more than the prediction range allows
+// withinRange === false → you asked more than the AMM can fill
 ```
 
 If it capped you, swap `quote.amountIn`, not the original number.
@@ -44,6 +48,6 @@ await pool.swap({
 })
 ```
 
-Buy is collateral → outcome. Sell is the reverse. Quote again right before you send — mids from the indexer can be stale.
+Buy is collateral → outcome (`OutcomeAmm.buy`). Sell is the reverse (`OutcomeAmm.sell`). Quote again right before you send — mids from the indexer can be stale.
 
-A trade in **one** pool does not move the others. If the book’s prices no longer sum to ~1, the [rebalancer](/protocol) trades complete sets against Uniswap until they do.
+A buy of one named outcome **does** move the others: the AMM splits a complete set, pays out the bought outcome, and keeps the rest. Named prices stay `p_i ∝ 1/x_i` and still sum to 1. After resolve, swaps revert.

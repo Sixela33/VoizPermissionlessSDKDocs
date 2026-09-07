@@ -9,7 +9,7 @@ If you remember one thing: **everything hangs off the client.** You never `new V
 const client = useVoiz().client // or new VoizMarketsClient({ … })
 
 const market = client.market(addr)
-const pool = client.pool(outcomeToken)
+const pool = client.pool(outcomeToken, { market: addr, outcomeIndex: 0 })
 const user = client.user(owner)
 ```
 
@@ -30,32 +30,36 @@ The usual **write** is `client.createMarket({ …, metadata })`. The client depl
 
 ## Collateral and outcomes
 
-Each market has one collateral token (`client.addresses.collateral`), several outcome ERC-20s (`wrappedTokens[0..numOutcomes-1]`), and Invalid at the end of that array.
+Each market has one collateral token (`client.addresses.collateral`), several named outcome ERC-20s (`wrappedTokens[0..numOutcomes-1]`), and Invalid at index `numOutcomes`.
 
-A **pool** is one outcome token against collateral. Trades go through `client.pool(outcomeToken)`, not the market address.
+There is **one** OutcomeAmm per market. A **pool** handle is one named outcome on that AMM: `client.pool(outcomeToken, { market, outcomeIndex })`. Trades go through that handle, not the market address.
 
-Those pools are independent Uniswap books. VOIZ keeps them honest with a [rebalancer](/protocol): complete-set flow through every pool, which is volume for LPs.
+Invalid is minted in complete-set splits so CT accounting closes. It is not a tradable named outcome. `market.prices().rows` is **named outcomes only** (`0 .. numOutcomes-1`). Invalid lives at `summary.wrappedTokens[numOutcomes]`. On-chain, `OutcomeAmm.prices()[numOutcomes]` is 0; that extra slot is not on the SDK rows.
 
-Seeding and across-outcome LP split a complete set once, then act per outcome.
+Seeding and later LP both call `addFunding` on that single AMM.
 
 ## Indexer vs chain
 
-| You want | Use | Source |
-| -------- | --- | ------ |
-| Catalog, charts, portfolio | `listMarkets`, `summary`, `prices`, `user.*` | Indexer first, RPC if it fails |
-| A size you can actually trade | `pool.quoteTrade` then `pool.swap` | Live RPC |
+| You want | Use | If the indexer is down |
+| -------- | --- | ---------------------- |
+| Catalog | `listMarkets`, `summary` | RPC fallback. `listMarkets` returns `{ source: "rpc", usedFallback: true }` |
+| Display prices | `market.prices()`, `metrics()` | RPC fallback, `{ source: "rpc" }` |
+| Charts / portfolio | `priceHistory`, `user.trades` / `sharePositions` / `lpPositions` | Soft-fail to `[]` |
+| A size you can actually trade | `pool.quoteTrade` then `pool.swap` | Live RPC (always) |
 
-`listMarkets` tells you `{ source, usedFallback }`. If the indexer is down, empty lists — trading still works off RPC.
+Do not treat an empty catalog as “indexer down”. That is the portfolio/history path.
 
 Display prices can lag a bit. Never size a swap from them.
 
+`user.sharePositions()` is the indexer share book only. It does not overlay live ERC-20 balances.
+
 ## Quotes vs writes
 
-**Seed:** `quoteSeed({ seedWei, oddsBps })` is pure math (safe before the market exists). `market.seed(…)` is the write — one `sendCalls` batch.
+**Seed:** `quoteSeed({ seedWei, oddsBps })` is pure math (`totalCollateral === seedWei`). `market.seed(…)` is first LP: `addFunding` with named-outcome odds and Invalid weight 0.
 
 **Trade:** `pool.quoteTrade({ side, amountIn })` may cap you (`withinRange: false`). `pool.swap` sends that size. `buy` is collateral → outcome; `sell` is the reverse. You apply slippage to `minAmountOut`.
 
-**LP:** `market.addLiquidity({ credits, owner })` — one collateral amount across open outcomes. Mechanics, fees, and risk: [How liquidity provision works](/guides/liquidity).
+**LP:** `market.addLiquidity({ credits, owner })` — later `addFunding` joining current proportions. Mechanics and risk: [How liquidity provision works](/guides/liquidity).
 
 ## How writes go out
 

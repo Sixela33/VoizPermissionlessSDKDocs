@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>VOIZ first-LP calculator</title>
+  <style>
+    :root {
+      --bg: #0b1c3a;
+      --card: #12284a;
+      --line: rgba(255, 255, 255, 0.12);
+      --text: #f4f7fb;
+      --muted: #9bb0c9;
+      --blue: #30a8f8;
+      --teal: #10c8a8;
+      --red: #f07178;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font: 15px/1.45 ui-sans-serif, system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    main { max-width: 52rem; margin: 0 auto; padding: 1.25rem; }
+    h1 { font-size: 1.25rem; margin: 0 0 0.35rem; }
+    .lede { color: var(--muted); margin: 0 0 1.25rem; font-size: 0.92rem; }
+    label { display: grid; gap: 0.3rem; font-size: 0.8rem; color: var(--muted); }
+    input, select, button {
+      font: inherit;
+      color: var(--text);
+      background: #0b1c3a;
+      border: 1px solid var(--line);
+      border-radius: 0.6rem;
+      padding: 0.45rem 0.65rem;
+    }
+    button { cursor: pointer; background: var(--blue); border: 0; font-weight: 600; }
+    button.ghost { background: transparent; border: 1px solid var(--line); }
+    .row { display: flex; flex-wrap: wrap; gap: 0.75rem; margin-bottom: 0.85rem; }
+    .row > * { flex: 1; min-width: 9rem; }
+    .outcome {
+      display: grid;
+      grid-template-columns: 1fr 6rem auto;
+      gap: 0.5rem;
+      align-items: end;
+      margin-bottom: 0.5rem;
+    }
+    table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+    th, td { text-align: left; padding: 0.4rem 0.3rem; border-bottom: 1px solid var(--line); }
+    th { color: var(--muted); font-size: 0.75rem; font-weight: 600; }
+    .pnl-pos { color: var(--teal); font-weight: 700; }
+    .pnl-neg { color: var(--red); font-weight: 700; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 1rem; padding: 1rem; margin-top: 1rem; }
+    .err { color: var(--red); font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>First-LP calculator</h1>
+    <p class="lede">
+      Same math as <code>OutcomeAmm.addFunding</code> + buys of one outcome + last-LP redeem.
+      Not <code>deposit × odds × win/lose</code>. Fees: 1% protocol + 0.5% creator + 0.2% referrer cash; 0.8% LP stays in the pool.
+    </p>
+    <div class="row">
+      <label>Seed amount (collateral)
+        <input id="seed" type="number" min="1" step="1" value="100" />
+      </label>
+    </div>
+    <p class="lede" style="margin-bottom:0.4rem">Opening odds (must sum toward 100%; we rescale)</p>
+    <div id="outcomes"></div>
+    <div class="row">
+      <button class="ghost" type="button" id="add">Add outcome</button>
+    </div>
+    <div class="row">
+      <label>Traders buy
+        <select id="bought"></select>
+      </label>
+      <label>Until that outcome is priced at (%)
+        <input id="targetPct" type="number" min="1" max="99" step="1" value="70" />
+      </label>
+      <label>Market resolves to
+        <select id="winner"></select>
+      </label>
+    </div>
+    <p class="lede">Set “until priced at” equal to opening odds for that outcome to model <strong>no trading</strong>.</p>
+    <div class="card" id="out"></div>
+  </main>
+  <script>
+    const FEE = { protocol: 100, creator: 50, referrer: 20, lp: 80 }
+    const DENOM = 10000
+    const totalFee = () => FEE.protocol + FEE.creator + FEE.referrer + FEE.lp
+
+    const state = {
+      names: ["Yes", "No"],
+      odds: [70, 30],
+    }
+
+    function el(id) { return document.getElementById(id) }
+
+    function renderOutcomes() {
+      const box = el("outcomes")
+      box.innerHTML = ""
+      state.names.forEach((name, i) => {
+        const wrap = document.createElement("div")
+        wrap.className = "outcome"
+        wrap.innerHTML = `
+          <label>Outcome ${i + 1}
+            <input data-k="name" data-i="${i}" value="${name}" />
+          </label>
+          <label>Odds %
+            <input data-k="odd" data-i="${i}" type="number" min="1" max="99" value="${state.odds[i]}" />
+          </label>
+          <button class="ghost" type="button" data-del="${i}" ${state.names.length <= 2 ? "disabled" : ""}>×</button>
+        `
+        box.appendChild(wrap)
+      })
+      const opts = state.names.map((n, i) => `<option value="${i}">${n}</option>`).join("")
+      el("bought").innerHTML = opts
+      el("winner").innerHTML = opts
+      const maxI = state.odds.indexOf(Math.max(...state.odds))
+      el("bought").value = String(maxI)
+      el("winner").value = String(maxI)
+      el("targetPct").value = String(state.odds[maxI])
+    }
+
+    function readInputs() {
+      state.names = [...document.querySelectorAll("[data-k=name]")].map((n) => n.value || "Outcome")
+      state.odds = [...document.querySelectorAll("[data-k=odd]")].map((n) => Number(n.value) || 1)
+      const seed = Number(el("seed").value)
+      const bought = Number(el("bought").value)
+      const targetPct = Number(el("targetPct").value)
+      const winner = Number(el("winner").value)
+      return { seed, bought, targetPct, winner }
+    }
+
+    function firstLp(C, odds) {
+      const max = Math.max(...odds)
+      const kept = odds.map((o) => C * o / max)
+      const sendBack = odds.map((o, i) => C - kept[i])
+      kept.push(C)
+      sendBack.push(0)
+      return { kept, sendBack, shares: C }
+    }
+
+    function prices(reserves) {
+      const named = reserves.length - 1
+      const inv = []
+      let sum = 0
+      for (let i = 0; i < named; i++) {
+        if (reserves[i] <= 0) return null
+        inv[i] = 1 / reserves[i]
+        sum += inv[i]
+      }
+      return inv.map((v) => v / sum)
+    }
+
+    function calcBuy(reserves, investment, idx) {
+      const named = reserves.length - 1
+      const feeBips = totalFee()
+      const minus = investment - investment * feeBips / DENOM
+      let ending = reserves[idx]
+      for (let i = 0; i < named; i++) {
+        if (i === idx) continue
+        ending = ending * reserves[i] / (reserves[i] + minus)
+      }
+      return reserves[idx] + minus - ending
+    }
+
+    function applyBuy(reserves, investment, idx) {
+      const feeBips = totalFee()
+      const boughtAmt = calcBuy(reserves, investment, idx)
+      const feeAmount = investment * feeBips / DENOM
+      const lpAmt = feeAmount * FEE.lp / feeBips
+      const toSplit = investment - feeAmount + lpAmt
+      return reserves.map((x, i) => x + toSplit - (i === idx ? boughtAmt : 0))
+    }
+
+    function buyUntil(reserves, idx, targetP) {
+      let lo = 0
+      let hi = Math.max(...reserves) * 50
+      let best = reserves.slice()
+      const startP = prices(reserves)[idx]
+      if (targetP <= startP + 1e-9) return { reserves, spent: 0 }
+      for (let n = 0; n < 48; n++) {
+        const mid = (lo + hi) / 2
+        try {
+          const next = applyBuy(reserves, mid, idx)
+          const p = prices(next)
+          if (!p) { hi = mid; continue }
+          best = next
+          if (p[idx] < targetP) lo = mid
+          else hi = mid
+        } catch {
+          hi = mid
+        }
+      }
+      return { reserves: best, spent: (lo + hi) / 2 }
+    }
+
+    function redeemNet(gross) {
+      const feeBips = totalFee()
+      const feeAmount = gross * feeBips / DENOM
+      const lpAmt = feeAmount * FEE.lp / feeBips
+      return gross - (feeAmount - lpAmt)
+    }
+
+    function fmt(n) {
+      return n.toLocaleString(undefined, { maximumFractionDigits: 2 })
+    }
+
+    function run() {
+      const { seed, bought, targetPct, winner } = readInputs()
+      const out = el("out")
+      try {
+        if (!(seed > 0)) throw new Error("Seed must be positive.")
+        if (state.odds.some((o) => o <= 0)) throw new Error("Each opening odd must be > 0.")
+        const inv = firstLp(seed, state.odds)
+        const p0 = prices(inv.kept)
+        const target = targetPct / 100
+        const moved = buyUntil(inv.kept, bought, target)
+        const p1 = prices(moved.reserves)
+        const poolWin = moved.reserves[winner]
+        const walletWin = inv.sendBack[winner]
+        const poolNet = redeemNet(poolWin)
+        const walletNet = redeemNet(walletWin)
+        const total = poolNet + walletNet
+        const pnl = total - seed
+        const pnlClass = pnl >= -1e-9 ? "pnl-pos" : "pnl-neg"
+        const rows = state.names.map((name, i) => `
+          <tr>
+            <td>${name}</td>
+            <td>${fmt(inv.kept[i])}</td>
+            <td>${fmt(inv.sendBack[i])}</td>
+            <td>${(p0[i] * 100).toFixed(1)}%</td>
+            <td>${(p1[i] * 100).toFixed(1)}%</td>
+            <td>${fmt(moved.reserves[i])}</td>
+          </tr>`).join("")
+        out.innerHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>Outcome</th>
+                <th>Kept in pool</th>
+                <th>Sent back</th>
+                <th>Open %</th>
+                <th>After flow %</th>
+                <th>Pool after flow</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <p class="lede" style="margin:0.8rem 0 0.3rem">
+            Traders spent ~${fmt(moved.spent)} collateral buying ${state.names[bought]}.
+            Resolves to <strong>${state.names[winner]}</strong>.
+          </p>
+          <table>
+            <tr><th></th><th>Winner tokens</th><th>After redeem fee</th></tr>
+            <tr><td>LP shares (pool)</td><td>${fmt(poolWin)}</td><td>${fmt(poolNet)}</td></tr>
+            <tr><td>Send-back (wallet)</td><td>${fmt(walletWin)}</td><td>${fmt(walletNet)}</td></tr>
+            <tr><td>Total</td><td>${fmt(poolWin + walletWin)}</td><td class="${pnlClass}">${fmt(total)}  (PnL ${pnl >= 0 ? "+" : ""}${fmt(pnl)})</td></tr>
+          </table>
+        `
+      } catch (error) {
+        out.innerHTML = `<p class="err">${error.message}</p>`
+      }
+    }
+
+    el("outcomes").addEventListener("input", () => {
+      readInputs()
+      run()
+    })
+    el("outcomes").addEventListener("click", (event) => {
+      const del = event.target.getAttribute("data-del")
+      if (del == null || state.names.length <= 2) return
+      const i = Number(del)
+      state.names.splice(i, 1)
+      state.odds.splice(i, 1)
+      renderOutcomes()
+      run()
+    })
+    el("add").onclick = () => {
+      if (state.names.length >= 6) return
+      state.names.push("Outcome " + (state.names.length + 1))
+      state.odds.push(10)
+      renderOutcomes()
+      run()
+    }
+    ;["seed", "bought", "targetPct", "winner"].forEach((id) => {
+      el(id).addEventListener("input", run)
+      el(id).addEventListener("change", run)
+    })
+    renderOutcomes()
+    run()
+  </script>
+</body>
+</html>

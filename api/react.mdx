@@ -59,35 +59,28 @@ const { client, addresses, chainId } = useVoiz()
 ```
 
 ```ts
-// returns
+// returns VoizContextValue
 {
   client: VoizMarketsClient
-  addresses: {
-    chainId: number
-    marketFactory: Address
-    adminOracle: Address
-    multisigOracle: Address
-    router: Address
-    collateral: Address
-    conditionalTokens: Address
-    poolManager: Address
-    positionManager: Address
-    stateView: Address
-    quoter: Address
-    permit2: Address
-    hook: Address
-    seerV4Swap: Address
-    fee: number
-    tickSpacing: number
-    hookFeeBips: number
-  }
+  addresses: ChainAddresses
   chainId: number
   publicClient: PublicClient
   walletClient?: WalletClient<Transport, Chain | undefined, Account>
-  sendCalls?: (
-    calls: Call[],
-    opts?: { requiredSigner?: Address }
-  ) => Promise<unknown>
+  sendCalls?: VoizSendCalls
+}
+```
+
+`addresses` is the live `ChainAddresses` map — not Uniswap v4 managers:
+
+```ts
+type ChainAddresses = {
+  chainId: number
+  marketFactory: Address
+  adminOracle: Address
+  multisigOracle: Address
+  router: Address
+  collateral: Address
+  conditionalTokens: Address
 }
 ```
 

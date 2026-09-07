@@ -1,0 +1,87 @@
+---
+title: "LP money calculator"
+description: "Worked arithmetic for first LP: inventory, idle resolve, then informed flow."
+---
+
+Interactive inputs live in [`lp-calc.html`](/lp-calc.html) (open that file). This page is the same math written out.
+
+Deposit `C = 100` collateral. Fees: protocol 1% + creator 0.5% + referrer 0.2% cash, LP 0.8% stays in the pool. Last-LP redeem therefore nets **98.3** of each winner token (cash cuts 1.7%, LP slice stays with you).
+
+Do **not** use `C × p × (+1 if win else −1)`. That is a bet.
+
+## 1. First LP split
+
+`max = max(odds)`. For each named outcome `i`:
+
+```
+kept_i     = C × odds_i / max
+sendBack_i = C − kept_i
+```
+
+Invalid: `kept = C`, `sendBack = 0`. Shares minted = `C`.
+
+**70 / 30** (`max = 70`):
+
+| Slot | kept in pool | sent back to you |
+| --- | --- | --- |
+| Yes (70) | 100 | 0 |
+| No (30) | 42.86 | 57.14 |
+| Invalid | 100 | 0 |
+
+You still own 100 Yes and 100 No in total (pool + wallet). Idle, any named winner pays 100 gross.
+
+**50 / 50:** pool keeps 100 of each slot. Send-back is 0.
+
+## 2. Idle resolve (nobody trades)
+
+Winner tokens you own × 0.983.
+
+| Seed | Winner | Pool winner | Wallet winner | Net | PnL vs 100 |
+| --- | --- | --- | --- | --- | --- |
+| 70/30 | Yes | 100 | 0 | 98.3 | −1.7 |
+| 70/30 | No | 42.86 | 57.14 | 98.3 | −1.7 |
+| 50/50 | either | 100 | 0 | 98.3 | −1.7 |
+
+The only leak is the **cash** fee on redeem. Odds do not change idle PnL.
+
+The indexer LP lot marks **pool shares only**. On 70/30 if No wins, `redeemLp` shows ~42.1; the other ~56.2 is a share redeem on send-back.
+
+## 3. Informed flow (buy 40 of the winner)
+
+A buy splits collateral (minus cash fees, plus LP fee as extra complete sets), then pays out winner tokens from the pool. Send-back does not grow.
+
+| Seed | Winner | Pool winner left | Wallet winner | Net | PnL vs 100 |
+| --- | --- | --- | --- | --- | --- |
+| 50/50 | Yes | 72.26 | 0 | 71.03 | **−29.0** |
+| 70/30 | Yes | 52.68 | 0 | 51.78 | **−48.2** |
+| 70/30 | No | 31.15 | 57.14 | 86.79 | **−13.2** |
+
+Buying the **favorite** hurts LP more: that slot was already fully in the pool, so traders take it from your LP shares. Buying the **long shot** takes from a thin pool; most of that winner was already in your wallet.
+
+## 3b. Traders lose (buy 40 of the loser)
+
+They pay collateral, take the **wrong** outcome out. The AMM still splits almost that whole 40 into complete sets, so extra **winner** tokens stay with you.
+
+| Seed | Winner | Pool winner left | Wallet winner | Net | PnL vs 100 |
+| --- | --- | --- | --- | --- | --- |
+| 50/50 | Yes (traders bought No) | 139.32 | 0 | 136.95 | **+37.0** |
+| 70/30 | Yes (traders bought No) | 139.32 | 0 | 136.95 | **+37.0** |
+| 70/30 | No (traders bought Yes) | 82.18 | 57.14 | 136.95 | **+37.0** |
+
+Same 100 seed, 40 bought of the loser: you keep ~their stake minus cash fees. Pool vs wallet only changes *where* the winner tokens sit.
+
+That is the house: right traders extract the winner from the pool; wrong traders donate complete sets and leave with trash.
+
+## 4. What the product books
+
+```
+cost     = addedFunds
+mark     = shares / supply × Σ named (reserve × price)
+PnL      = realized on burns + mark − remaining cost
+```
+
+Later LP and mixed flow are different paths. The interactive form is [`lp-calc.html`](/lp-calc.html) in this docs folder — not in the SDK.
+
+## Next
+
+[How liquidity provision works](/guides/liquidity)

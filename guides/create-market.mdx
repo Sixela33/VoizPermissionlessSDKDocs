@@ -3,7 +3,7 @@ title: "Create a market"
 description: "Pass metadata on createMarket, then seed."
 ---
 
-The factory has to mint the market before anything can point at it. `createMarket` does that, then — if you passed `metadata` — uploads files and sets `metadataURI`. Seed is still a second call.
+`createMarket` without `seedWei` only deploys the market. Pass `seedWei` and `oddsBps` to call `createMarketAndSeed` (approve the **factory**, one inner create+first-LP). Metadata upload is off the critical path: HTTP can run during seed; `setMetadataURI` is a later tx if a URI lands.
 
 ## You need
 
@@ -19,6 +19,8 @@ const { marketAddress } = await client.createMarket({
   outcomes: ['Yes', 'No'],
   resolverKind: 'admin',
   marketAdmin: yourAddress,
+  seedWei,           // omit for create-only
+  oddsBps,           // required with seedWei
   metadata: {
     description: '…',
     resolutionCriteria: 'Coinbase ETH-USD at 23:59 UTC.',
@@ -36,9 +38,9 @@ const market = client.market(marketAddress)
 
 Skip `metadata` if you have nothing to publish. After the market is live, treat the document as frozen in the product UI. `market.setMetadata` still exists for a retry if the upload failed after create.
 
-## Seed
+## Seed later
 
-See [Seed liquidity](/guides/seed). Preview with `quoteSeed` first so the user knows how much collateral they will lock.
+If you omitted `seedWei`, see [Seed liquidity](/guides/seed). Preview with `quoteSeed`.
 
 ```ts
 import { normalizeOddsBps, quoteSeed } from '@voiz-digital/markets-sdk'

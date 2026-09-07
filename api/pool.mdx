@@ -1,35 +1,38 @@
 ---
 title: "Pool"
-description: "client.pool(outcomeToken) — one outcome against collateral."
+description: "client.pool(outcomeToken, { market, outcomeIndex }) — one named outcome on the market AMM."
 ---
 
-You do not pass a market address here. The pool is the outcome token.
+The handle is the outcome token plus market context. That is how the SDK finds this market's OutcomeAmm.
 
 ```ts
-const pool = client.pool(outcomeToken)
+const pool = client.pool(outcomeToken, { market: marketAddress, outcomeIndex: 0 })
 ```
 
-Size with `quoteTrade`. Display mids live on `market.prices()`.
+Size with `quoteTrade`. Display mids live on `market.prices()`. Invalid is not tradable.
 
 ## State
 
-Prefer `quoteTrade.priceAfter` / `priceAboveNinetyNineCents` for trade gates. Mid/reserve helpers are package-internal.
-
+Prefer `quoteTrade.spotPrice` / `priceAboveNinetyNineCents` for trade gates.
 
 ### state
 
-Live pool status, `slot0`, and liquidity.
+Whether the AMM has pool shares (`totalSupply > 0`).
+
+| Field | Live meaning |
+| ----- | ------------ |
+| `status` | `"open"` if `totalSupply > 0`, else `"uninitialized"` |
+| `liquidity` | AMM `totalSupply` (ERC-20 pool shares) |
+| `poolId` | OutcomeAmm address |
 
 ```ts
-const { status, sqrtPriceX96, tick, liquidity, poolId } = await pool.state()
+const { status, liquidity, poolId } = await pool.state()
 ```
 
 ```ts
-// returns
+// returns (read these)
 Promise<{
   status: "uninitialized" | "open"
-  sqrtPriceX96: bigint
-  tick: number
   liquidity: bigint
   poolId: Hex
 }>
@@ -42,19 +45,17 @@ type PoolStatus = "uninitialized" | "open"
 
 type PoolState = {
   status: PoolStatus
-  sqrtPriceX96: bigint
-  tick: number
   liquidity: bigint
   poolId: Hex
 }
 ```
 
-### priceFromState
+### spotPrice
 
-Mid price from an already-fetched `PoolState` (no RPC). `null` when status is not `"open"`.
+Live named-outcome mid from `OutcomeAmm.prices()`, scaled from 1e18. `null` if the slot has no price.
 
 ```ts
-const mid = pool.priceFromState(await pool.state())
+const mid = await pool.spotPrice()
 ```
 
 ```ts
@@ -64,10 +65,10 @@ number | null
 
 ### quoteTrade
 
-Exact-in quote matching `swap` sides: buy = collateral → outcome; sell = the reverse. May return a capped size when the request exceeds prediction-range liquidity (`withinRange: false`).
+Exact-in quote matching `swap` sides: buy = collateral → outcome; sell = the reverse. May return a capped size when the request cannot fill (`withinRange: false`).
 
 ```ts
-const quote = await client.pool(outcomeToken).quoteTrade({
+const quote = await client.pool(outcomeToken, { market, outcomeIndex }).quoteTrade({
   side: "buy",
   amountIn: 5_000_000n,
 })
@@ -97,7 +98,7 @@ Promise<{
 - `withinRange` — whether the full request quoted successfully
 - `maxAmountIn` — largest size that still quotes
 - `message?` / `error?: "EXCEEDS_RANGE"` — when capped
-- `spotPrice?` / `priceAfter?` — mid before / estimated after
+- `spotPrice?` / `priceAfter?` — mid before / after (after currently equals spot)
 - `priceAboveNinetyNineCents?` — current spot already above 0.99
 
 ```ts
@@ -117,7 +118,7 @@ type QuoteTradeResult = {
 
 ### swap
 
-Exact-in swap via the Seer V4 helper and the client sender.
+Exact-in swap via OutcomeAmm (`buy` / `sell`) and the client sender.
 
 ```ts
 const result = await pool.swap({
@@ -133,8 +134,4 @@ const result = await pool.swap({
 Promise<unknown>
 ```
 
-Opaque sender result (same shape as your `sendCalls` / wallet path).
-
-## Advanced
-
-`pool.key` exists for low-level callers (type not root-exported). LP burn and swap use outcome/collateral tokens — you do not pass a PoolKey.
+Opaque sender result (same shape as your `sendCalls` / wallet path). After resolve, the AMM reverts `Resolved`.

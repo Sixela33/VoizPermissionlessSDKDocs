@@ -29,9 +29,11 @@ type ClientConfig = {
 
 ```ts
 client.market(marketAddress)
-client.pool(outcomeToken)
+client.pool(outcomeToken, { market: marketAddress, outcomeIndex })
 client.user(walletAddress)
 ```
+
+`pool` requires `{ market, outcomeIndex }`. That is how the SDK finds the market's OutcomeAmm.
 
 ## Catalog
 
@@ -85,8 +87,9 @@ If metadata is present but the new address cannot be parsed from the receipt, it
 
 ```ts
 await client.redeem({ marketAddress, indexes, amounts, owner })
-await client.burn({ tokenId, outcomeToken, recipient })
 await client.mintCollateral({ to, amount }) // testnet collateral, if the token exposes mint
 ```
 
 Prefer `market.redeem` when you already have the market handle. `createMarket` is the one write that must live on the client — there is no market yet.
+
+There is no `client.burn`. First LP is `market.seed`. Later LP is `market.addLiquidity`. Both encode `OutcomeAmm.addFunding`. The SDK does not wrap `removeFunding`.

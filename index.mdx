@@ -1,18 +1,20 @@
 ---
 title: "VOIZ Markets SDK"
-description: "One client. A living market. Crypto stays underneath."
+description: "One client. A living market. OutcomeAmm underneath."
 ---
 
 VOIZ turns a question into a live market. This SDK is how you talk to that market: one client, then a market, a pool, or a user. Viem is underneath. You do not assemble calldata.
 
 ```ts
 client.listMarkets()
-client.market(address)   // summary, metadata, seed, resolve, LP
-client.pool(outcomeToken) // quote, swap
-client.user(owner)        // trades, shares, LP NFTs
+client.market(address)                         // summary, metadata, seed, resolve, LP
+client.pool(outcomeToken, { market, outcomeIndex }) // quote, swap
+client.user(owner)                             // trades, share book, AMM LP shares
 ```
 
 A **market** is the protocol object. **Metadata** (description, resolution rules, images) is a separate **read** on that same market — it is not mixed into the catalog. You **write** it by passing `metadata` into `createMarket`.
+
+Each market has **one** complete-set OutcomeAmm. You trade named outcomes against that AMM. Invalid is an extra CT slot, priced at 0, and is not tradable. LP inventory math: [calculator](/guides/lp-calculator).
 
 ## Install
 
@@ -41,7 +43,7 @@ React apps also want `react`, then import `@voiz-digital/markets-sdk/react`.
     Client, market, pool, user — and where metadata lives.
   </Card>
   <Card title="How the protocol works" href="/protocol">
-    Complete sets, Uniswap LPs, and the rebalancer.
+    Complete-set OutcomeAmm, prices, fees, and settlement.
   </Card>
   <Card title="React / Next.js" href="/quickstart-react">
     Wrap the app, grab `useVoiz().client`, list and trade.

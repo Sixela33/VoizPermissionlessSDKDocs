@@ -1,6 +1,6 @@
 ---
 title: "User"
-description: "client.user(addr) — that wallet's fills, shares, and LP NFTs."
+description: "client.user(addr) — that wallet's fills, share book, and AMM LP shares."
 ---
 
 Indexer reads. Soft-fail to `[]` if Ponder is down.
@@ -9,8 +9,16 @@ Indexer reads. Soft-fail to `[]` if Ponder is down.
 const user = client.user(address)
 await user.trades()
 await user.sharePositions()
-await user.lpPositions({ market, wrappedTokens })
+await user.lpPositions({ market })
 ```
+
+Three books. Do not mix them.
+
+| Method | Book |
+| ------ | ---- |
+| `trades()` | OutcomeAmm `Buy` / `Sell` fills |
+| `sharePositions()` | Indexer `sharePosition` only (no live ERC-20 overlay) |
+| `lpPositions()` | OutcomeAmm ERC-20 pool shares (one lot per market) |
 
 ## Methods
 
@@ -33,20 +41,19 @@ Promise<Array<{
   side: "buy" | "sell"
   outcomeAmount: bigint
   collateralAmount: bigint
-  hookFee: bigint
   priceCt: number
   timestamp: string
   transactionHash: Hex
 }>>
 ```
 
-Fill rows from the indexer (empty array on soft-fail).
+Swap fees live in the indexer `hook_fee` table, not on the trade row.
 
 ### sharePositions
 
 Outcome share book: one row per (market, outcome) with net shares and average entry. Soft-fails to `[]`.
 
-When `markets` is `MarketSummary[]`, also multicalls live ERC-20 balances. Mark `priceCt` comes from the indexer; raw fills stay on `trades()`; LP NFTs on `lpPositions()`.
+Source of truth is indexer `sharePosition`. Inventory, remaining cost, and realized PnL come from that table. Mark `priceCt` comes from indexer `outcome` (0/1 after resolve). Raw fills stay on `trades()`. AMM LP lots stay on `lpPositions()`.
 
 ```ts
 const book = await user.sharePositions({ markets: summaries })
@@ -66,135 +73,52 @@ Promise<Array<{
   priceCt: number | null
   resolved: boolean
   winningOutcome: number | null
+  redeemed: boolean
+  realizedPnlCollateral: bigint
 }>>
+```
+
+Open lots with `shares == 0` are dropped. After resolve, a fully exited lot stays (`redeemed: true`) so the profile can show Redeemed.
+
+PnL for a lot:
+
+```
+markValue     = shares * priceCt          // 0 or 1 after resolve
+unrealized    = markValue - costCollateral
+pnl           = realizedPnlCollateral + unrealized
 ```
 
 ### lpPositions
 
-Open LP positions — one market (indexer discovery + live enrich) or all markets.
+Indexed OutcomeAmm ERC-20 pool-share lots. One row per (user, market). Soft-fails to `[]`. Rows with `shares == 0` and `realizedPnlCollateral == 0` are omitted.
 
 ```ts
-// Single market — wrappedTokens required
-const one = await user.lpPositions({
-  market: marketAddress,
-  wrappedTokens,
-})
-
-// All markets
+const one = await user.lpPositions({ market: marketAddress })
 const all = await user.lpPositions()
 ```
 
 ```ts
-// returns (single market)
+// returns
 Promise<Array<{
-  tokenId: bigint
-  outcomeIndex: number
-  outcomeToken: Address
-  tickLower: number
-  tickUpper: number
-  liquidity: bigint
-  amount0: bigint
-  amount1: bigint
-  entryValueCollateral: bigint | null
+  marketId: Address
+  marketName: string
+  poolId: Address
+  shares: bigint
+  costCollateral: bigint
+  realizedPnlCollateral: bigint
   currentValueCollateral: bigint | null
   pnlCollateral: bigint | null
 }>>
-
-// returns (all markets) — same fields plus:
-// marketId, marketName, outcomeLabel
 ```
 
-`poolKey` may be present at runtime but is `@internal` — use `outcomeToken` for `client.burn`.
+`currentValueCollateral` is the named-outcome basket marked at indexer `priceCt` (0/1 if resolved), pro-rata to `shares / lpSupply`. `pnlCollateral` is realized + unrealized when mark is available.
 
 ## Related types
 
-### UserTradesParams
+Param bags and aliases. Return DTOs are the typed blocks on each method above.
 
-```ts
-type UserTradesParams = {
-  market?: Address
-  limit?: number
-}
-```
-
-### UserPositionsParams
-
-- `markets?: Address[]` — filter by market id
-- `markets?: MarketSummary[]` — also supplies labels / tokens / resolution and enables a live balance multicall
-
-```ts
-type UserPositionsParams = {
-  markets?: Address[] | MarketSummary[]
-}
-```
-
-### UserSharePosition
-
-- Identity: `marketId`, `marketName`, `outcomeIndex`, `outcomeLabel`, `token`
-- Book: `shares`, `avgEntryPriceCt`, `costCollateral`, `priceCt`
-- Resolution: `resolved`, `winningOutcome`
-
-```ts
-type UserSharePosition = {
-  marketId: Address
-  marketName: string
-  outcomeIndex: number
-  outcomeLabel: string
-  token: Address
-  shares: bigint
-  avgEntryPriceCt: number | null
-  costCollateral: bigint | null
-  priceCt: number | null
-  resolved: boolean
-  winningOutcome: number | null
-}
-```
-
-### UserLpPositionsParams
-
-```ts
-type UserLpPositionsParams = {
-  market?: Address
-  wrappedTokens?: Address[]
-  collateral?: Address
-  markets?: Array<{
-    address: Address
-    marketName: string
-    outcomes: string[]
-    wrappedTokens: Address[]
-  }>
-}
-```
-
-### AllMarketsLpPosition
-
-```ts
-type AllMarketsLpPosition = LpPosition & {
-  marketId: Address
-  marketName: string
-  outcomeLabel: string
-}
-```
-
-### Trade
-
-- Identity: `id`, `marketId`, `marketName`, `outcomeIndex`, `outcomeLabel`
-- Fill: `side`, `outcomeAmount`, `collateralAmount`, `hookFee`, `priceCt`
-- Meta: `timestamp`, `transactionHash`
-
-```ts
-type Trade = {
-  id: string
-  marketId: Address
-  marketName: string
-  outcomeIndex: number
-  outcomeLabel: string
-  side: "buy" | "sell"
-  outcomeAmount: bigint
-  collateralAmount: bigint
-  hookFee: bigint
-  priceCt: number
-  timestamp: string
-  transactionHash: Hex
-}
-```
+| Type | Fields |
+| ---- | ------ |
+| `UserTradesParams` | `market?: Address`, `limit?: number` |
+| `UserPositionsParams` | `markets?: Address[] \| MarketSummary[]` — filter; summaries also supply labels / tokens / resolution. Inventory still comes from the indexer. |
+| `UserLpPositionsParams` | `market?: Address` |

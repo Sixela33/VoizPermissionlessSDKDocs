@@ -1,9 +1,9 @@
 ---
 title: "Seed a market"
-description: "quoteSeed to preview, market.seed to open the pools."
+description: "quoteSeed to preview, market.seed to open the OutcomeAmm."
 ---
 
-Seeding is how a market becomes tradable. Quote the collateral first (pure math), then call `market.seed`. There is no `client.seedMarket`.
+Seeding is first LP: `OutcomeAmm.addFunding` with named-outcome odds (Invalid weight 0). Prefer `createMarket({ seedWei, oddsBps })` when you want create+seed in one factory tx. Otherwise `quoteSeed` then `market.seed`. There is no `client.seedMarket`.
 
 ## You need
 
@@ -24,7 +24,7 @@ const { splitAmount, poolCollateral, totalCollateral } = quoteSeed({
   seedWei,
   oddsBps,
 })
-// Show totalCollateral before they confirm — that is what they lock, not just seedWei.
+// Show totalCollateral before they confirm — for OutcomeAmm this equals seedWei.
 ```
 
 This works **before** the market exists. Handy on the create screen.
@@ -41,10 +41,10 @@ await market.seed({
 })
 ```
 
-That is **one** `sendCalls` batch: split + every outcome init/mint. On AA, one UserOp. On a plain wallet, still one signature per inner call. Pools that are already open skip `initialize`.
+That is **one** `sendCalls` batch: collateral approve + `addFunding`. On AA, one UserOp. On a plain wallet, still one signature per inner call.
 
-Outcome tokens default from the market; pass `outcomeTokens` if you already loaded them (real outcomes only — not Invalid).
+`quoteSeed` returns `totalCollateral === seedWei` (one complete-set deposit). Later LP is `market.addLiquidity`, which joins current proportions with an empty hint.
 
 ```ts
-await market.seedStatus() // 'none' | 'partial' | 'seeded'
+await market.seedStatus() // 'none' | 'seeded'  (AMM totalSupply > 0)
 ```

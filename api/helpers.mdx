@@ -9,8 +9,14 @@ From `@voiz-digital/markets-sdk`. Market / pool / user types come back from fact
 
 ```ts
 const addresses = getAddresses(chainId)
-const staging = getAddresses(chainId, { hook: CUSTOM_HOOK })
+const staging = getAddresses(chainId, {
+  marketFactory: CUSTOM_FACTORY,
+  router: CUSTOM_ROUTER,
+  collateral: CUSTOM_COLLATERAL,
+})
 ```
+
+Overrides are `Partial<Omit<ChainAddresses, "chainId">>`. Valid keys: `marketFactory`, `adminOracle`, `multisigOracle`, `router`, `collateral`, `conditionalTokens`. There is no `hook` field.
 
 Pass the result as `addresses` on the client or `VoizProvider` when you are not on the baked-in Base / Base Sepolia map.
 

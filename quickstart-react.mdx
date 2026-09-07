@@ -67,7 +67,7 @@ export function MarketList() {
 
 ## Buy something
 
-Pools are keyed by the **outcome token** (`summary.wrappedTokens[i]`), not the market address.
+The pool handle is the named **outcome token** plus `{ market, outcomeIndex }`. That is how the SDK finds this market's OutcomeAmm.
 
 ```tsx
 'use client'
@@ -76,22 +76,26 @@ import { useVoiz } from '@voiz-digital/markets-sdk/react'
 import type { Address } from 'viem'
 
 export function BuyButton({
+  market,
   outcomeToken,
+  outcomeIndex,
   user,
   amountIn,
 }: {
+  market: Address
   outcomeToken: Address
+  outcomeIndex: number
   user: Address
   amountIn: bigint
 }) {
   const { client } = useVoiz()
 
   async function onBuy() {
-    const pool = client.pool(outcomeToken)
+    const pool = client.pool(outcomeToken, { market, outcomeIndex })
     const quote = await pool.quoteTrade({ side: 'buy', amountIn })
 
     if (!quote.withinRange) {
-      // Use quote.amountIn — that is the max that still fits
+      // Use quote.amountIn — that is the max that still quotes
     }
 
     await pool.swap({

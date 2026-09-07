@@ -65,20 +65,60 @@ Promise<{
 } | null>
 ```
 
-### priceHistory / prices / metrics
+### priceHistory
 
-Charts and cards. Soft-fail history to `[]`. `prices` is **not** a trade quote — use `pool.quoteTrade`.
+Chart points. Soft-fails to `[]` if the indexer is down.
 
 ```ts
 await market.priceHistory({ from: Math.floor(Date.now() / 1000) - 86400 })
-await market.prices()
-await market.metrics()
+```
+
+### prices
+
+Named-outcome display mids (`0 .. numOutcomes-1`). **Not** a trade quote — use `pool.quoteTrade`. Indexer first, then live `OutcomeAmm.prices()`. Resolved markets return 1/0 via `resolvedDisplayRows` (winner `impliedPct` 100, others 0). Invalid is **not** in `rows`.
+
+```ts
+const { source, rows } = await market.prices()
+```
+
+```ts
+// returns OutcomePrices
+Promise<{
+  source: "indexer" | "rpc"
+  rows: Array<{
+    index: number
+    label: string
+    token: Address
+    priceCt: number | null
+    impliedPct: number | null
+  }>
+}>
+```
+
+### metrics
+
+Liquidity + volume per named outcome. Indexer `outcome` table first; RPC fallback has `volumeCollateral: null`.
+
+```ts
+const { source, rows } = await market.metrics()
+```
+
+```ts
+// returns OutcomeMetrics
+Promise<{
+  source: "indexer" | "rpc"
+  rows: Array<{
+    index: number
+    liquidity: bigint | null
+    volumeCollateral: bigint | null
+  }>
+}>
 ```
 
 ### seedStatus / canResolve
 
 ```ts
-await market.seedStatus() // "none" | "partial" | "seeded"
+await market.seedStatus() // "none" | "seeded" (AMM totalSupply > 0)
 await market.canResolve(user)
 ```
 
@@ -105,19 +145,24 @@ Promise<{ uri: string }>
 
 ### seed
 
-Split + every outcome init/mint in **one** `sendCalls` batch.
+First LP: collateral approve + `OutcomeAmm.addFunding` with named-outcome odds and Invalid weight 0, in **one** `sendCalls` batch.
 
 ```ts
 await market.seed({ seedWei, oddsBps, owner })
 ```
 
-### resolve / merge / redeem / addLiquidity
+### resolve / merge / redeem / LP
 
 ```ts
 await market.resolve({ outcomeIndex: 0 })
 await market.merge({ amount, owner })
 await market.redeem({ indexes, amounts, owner })
 await market.addLiquidity({ credits, owner })
+await market.removeFunding({ shares, owner })
+await market.redeemLp({ shares, owner }) // resolved only
+await market.pauseTrading({ owner })     // creator, one-way
 ```
 
 Admin `resolve` passes `requiredSigner: marketAdmin` for AA routing. A plain wallet ignores that hint.
+
+`createMarket({ seedWei, oddsBps })` is create-and-seed on the factory. Omit `seedWei` for create-only.
