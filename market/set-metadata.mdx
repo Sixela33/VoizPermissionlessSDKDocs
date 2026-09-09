@@ -1,0 +1,25 @@
+---
+title: "Set market metadata"
+description: "Upload files and set metadataURI on an existing market."
+---
+
+Low-level write. Prefer `client.createMarket({ metadata })` when you are creating — that path deploys, then calls this for you.
+
+Uploads files through the proxy if you pass `File` / `Blob`, then sets `metadataURI`. Needs `IMAGE_ROLE` (the creator has it). Use this as a retry if the upload failed after create.
+
+```ts
+await market.setMetadata({
+  description,
+  resolutionCriteria,
+  image,          // File | Blob | url | null
+  outcomeImages,  // same, per outcome
+})
+```
+
+```ts
+Promise<{ uri: string }>
+```
+
+## Next
+
+[Get market prices](/market/prices)

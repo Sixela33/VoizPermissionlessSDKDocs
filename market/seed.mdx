@@ -1,17 +1,13 @@
 ---
 title: "Seed a market"
-description: "quoteSeed to preview, market.seed to open the OutcomeAmm."
+description: "Preview with quoteSeed, then open the OutcomeAmm with market.seed."
 ---
 
 Seeding is first LP: `OutcomeAmm.addFunding` with named-outcome odds (Invalid weight 0). Prefer `createMarket({ seedWei, oddsBps })` when you want create+seed in one factory tx. Otherwise `quoteSeed` then `market.seed`. There is no `client.seedMarket`.
 
-## You need
+You need the market address, enough collateral for `quoteSeed(…).totalCollateral`, and `owner` as the connected wallet.
 
-The market address, enough collateral for `quoteSeed(…).totalCollateral`, and `owner` as the connected wallet.
-
-## 1. Quote
-
-Odds are percents. We turn them into basis points that sum to 10_000 (each outcome 1%–99%).
+Odds are percents. `normalizeOddsBps` turns them into basis points that sum to 10_000 (each outcome 1%–99%).
 
 ```ts
 import { normalizeOddsBps, quoteSeed } from '@voiz-digital/markets-sdk'
@@ -25,14 +21,6 @@ const { splitAmount, poolCollateral, totalCollateral } = quoteSeed({
   oddsBps,
 })
 // Show totalCollateral before they confirm — for OutcomeAmm this equals seedWei.
-```
-
-This works **before** the market exists. Handy on the create screen.
-
-## 2. Seed
-
-```ts
-const market = client.market(marketAddress)
 
 await market.seed({
   seedWei,
@@ -43,8 +31,12 @@ await market.seed({
 
 That is **one** `sendCalls` batch: collateral approve + `addFunding`. On AA, one UserOp. On a plain wallet, still one signature per inner call.
 
-`quoteSeed` returns `totalCollateral === seedWei` (one complete-set deposit). Later LP is `market.addLiquidity`, which joins current proportions with an empty hint.
+`quoteSeed` does not need a market yet. It returns `totalCollateral === seedWei` (one complete-set deposit). Later LP is [`market.addLiquidity`](/market/add-liquidity), which joins current proportions with an empty hint.
 
 ```ts
 await market.seedStatus() // 'none' | 'seeded'  (AMM totalSupply > 0)
 ```
+
+## Next
+
+[How liquidity works](/market/liquidity)

@@ -9,3 +9,6 @@ drafts/
 # Kept on disk but not published
 dump.mdx
 _audit-*.md
+_amm-docs-*.md
+AGENTS.md
+.atl/

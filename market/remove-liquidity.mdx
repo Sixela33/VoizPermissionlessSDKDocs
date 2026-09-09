@@ -1,0 +1,16 @@
+---
+title: "Remove liquidity"
+description: "Burn pool shares while the market is open and take the token basket."
+---
+
+Open-market LP exit is `market.removeFunding`. You get a basket of every slot, then [`merge`](/market/merge) complete sets if you want collateral. After resolve, use [`redeemLp`](/market/redeem-lp) instead.
+
+```ts
+await market.removeFunding({ shares, owner })
+```
+
+Find the lot with [`user.lpPositions`](/user/get-lp-positions). Send-back / leftover named tokens are share positions — cash those with [`market.redeem`](/market/redeem).
+
+## Next
+
+[LP calculator](/market/lp-calculator)

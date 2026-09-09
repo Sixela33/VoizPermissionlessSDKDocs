@@ -1,0 +1,28 @@
+---
+title: "Add liquidity"
+description: "Join the open book with one collateral amount via market.addLiquidity."
+---
+
+You put in `credits`. The SDK calls `OutcomeAmm.addFunding` on this market's AMM. That is `market.addLiquidity` after the book is open.
+
+First LP is [`market.seed`](/market/seed) — same contract, with a distribution hint from the odds (Invalid weight 0). For inventory, fees, and resolution, read [How liquidity works](/market/liquidity) first.
+
+You need a seeded market (`seedStatus()` is `"seeded"` when AMM `totalSupply > 0`), enough collateral, and `owner` as the connected wallet.
+
+```ts
+const credits = parseUnits('50', 18)
+
+await market.addLiquidity({
+  credits,
+  owner: yourAddress,
+  setProgress, // SDK sends "Minting shares…"
+})
+```
+
+Later LP uses an empty distribution hint and joins **current** proportions. Tiny `credits` fail with “Amount too small…”.
+
+You receive ERC-20 pool shares (`vAMM`), one lot per market. Find them with [`client.user(addr).lpPositions`](/user/get-lp-positions).
+
+## Next
+
+[Remove liquidity](/market/remove-liquidity)

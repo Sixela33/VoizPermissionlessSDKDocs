@@ -1,0 +1,16 @@
+---
+title: "Merge complete sets"
+description: "Turn a full set (named outcomes + Invalid) back into collateral."
+---
+
+Anyone with a **complete set** (every outcome including Invalid) can `merge` back to collateral anytime. Redeeming winning shares waits until the market is [resolved](/market/resolve).
+
+```ts
+await market.merge({ amount, owner: yourAddress })
+```
+
+An open-market merge that empties a share lot is dropped from the indexer share book (`shares == 0` and not resolved).
+
+## Next
+
+[Redeem winning shares](/market/redeem)

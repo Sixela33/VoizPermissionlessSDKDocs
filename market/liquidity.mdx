@@ -1,11 +1,11 @@
 ---
-title: "How liquidity provision works"
+title: "How liquidity works"
 description: "You are the book. One OutcomeAmm, ERC-20 pool shares, trading stops at resolve."
 ---
 
 On VOIZ, LPs **are** the market. You are not picking Yes or No. You deposit collateral into the market's OutcomeAmm so the community can trade through you.
 
-You hold a mix of outcome tokens (the book). Protocol / creator / referrer fees are **cash out of the trade**. The LP cut (default 0.8%) stays in the pool as extra complete sets. Your P&L is inventory marked at AMM (or 0/1) prices versus cost — not `deposit × odds × win/lose`. Worked numbers (100 collateral, 70/30, buy 40): [LP calculator](/guides/lp-calculator).
+You hold a mix of outcome tokens (the book). Protocol / creator / referrer fees are **cash out of the trade**. The LP cut (default 0.8%) stays in the pool as extra complete sets. Your P&L is inventory marked at AMM (or 0/1) prices versus cost — not `deposit × odds × win/lose`. Worked numbers (100 collateral, 70/30, buy 40): [LP calculator](/market/lp-calculator).
 
 Not financial advice. Size only what you can lose.
 
@@ -95,4 +95,6 @@ await market.seed({ seedWei, oddsBps, owner })
 await market.addLiquidity({ credits, owner })
 ```
 
-See [Provide liquidity](/guides/provide-lp) for the later-LP call shape.
+## Next
+
+[Add liquidity](/market/add-liquidity)

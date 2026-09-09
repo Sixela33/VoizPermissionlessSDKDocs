@@ -1,0 +1,50 @@
+---
+title: "Quote a trade"
+description: "Exact-in quote against the AMM. Never size from display prices."
+---
+
+You trade **one named outcome against collateral** on the market's OutcomeAmm. The handle is the outcome token plus `{ market, outcomeIndex }`. Invalid is not tradable. Display mids live on [`market.prices()`](/market/prices). `quoteTrade` is for the button.
+
+You need a seeded market, collateral (buy) or shares (sell), and `summary.wrappedTokens[index]` for a **named** outcome.
+
+```ts
+const pool = client.pool(outcomeToken, { market: marketAddress, outcomeIndex: 0 })
+const quote = await pool.quoteTrade({
+  side: 'buy', // or 'sell'
+  amountIn,
+})
+```
+
+Exact-in quote matching `swap` sides: buy = collateral → outcome; sell = the reverse. May return a capped size when the request cannot fill (`withinRange: false`). If it capped you, swap `quote.amountIn`, not the original number.
+
+```ts
+Promise<{
+  requestedAmountIn: bigint
+  amountIn: bigint
+  amountOut: bigint
+  withinRange: boolean
+  maxAmountIn: bigint
+  message?: string
+  error?: "EXCEEDS_RANGE"
+  spotPrice?: number | null
+  priceAfter?: number | null
+  priceAboveNinetyNineCents?: boolean
+}>
+```
+
+| Field | Meaning |
+| ----- | ------- |
+| `requestedAmountIn` | Size you asked for |
+| `amountIn` | Size this `amountOut` applies to (may be capped) |
+| `amountOut` | Expected out for `amountIn` |
+| `withinRange` | Whether the full request quoted successfully |
+| `maxAmountIn` | Largest size that still quotes |
+| `message?` / `error?: "EXCEEDS_RANGE"` | When capped |
+| `spotPrice?` / `priceAfter?` | Mid before / after (after currently equals spot) |
+| `priceAboveNinetyNineCents?` | Current spot already above 0.99 |
+
+Quote again right before you send — mids from the indexer can be stale.
+
+## Next
+
+[Swap](/outcome/swap)

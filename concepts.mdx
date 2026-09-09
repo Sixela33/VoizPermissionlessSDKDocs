@@ -59,7 +59,7 @@ Display prices can lag a bit. Never size a swap from them.
 
 **Trade:** `pool.quoteTrade({ side, amountIn })` may cap you (`withinRange: false`). `pool.swap` sends that size. `buy` is collateral → outcome; `sell` is the reverse. You apply slippage to `minAmountOut`.
 
-**LP:** `market.addLiquidity({ credits, owner })` — later `addFunding` joining current proportions. Mechanics and risk: [How liquidity provision works](/guides/liquidity).
+**LP:** `market.addLiquidity({ credits, owner })` — later `addFunding` joining current proportions. Mechanics and risk: [How liquidity provision works](/market/liquidity).
 
 ## How writes go out
 

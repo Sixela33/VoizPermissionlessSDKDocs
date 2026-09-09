@@ -1,0 +1,71 @@
+---
+title: "Get share positions"
+description: "Indexer share book: net shares and average entry per outcome."
+---
+
+`sharePositions()` is indexer `sharePosition` only. There is no live ERC-20 overlay. Soft-fails to `[]` if the indexer is down.
+
+Three books. Do not mix them.
+
+| Method | Book |
+| ------ | ---- |
+| [`trades()`](/user/get-trades) | OutcomeAmm `Buy` / `Sell` fills |
+| `sharePositions()` | Indexer `sharePosition` only (no live ERC-20 overlay) |
+| [`lpPositions()`](/user/get-lp-positions) | OutcomeAmm ERC-20 pool shares (one lot per market) |
+
+Inventory, remaining cost, and realized PnL come from that table. Mark `priceCt` comes from indexer `outcome` (0/1 after resolve). Raw fills stay on `trades()`. AMM LP lots stay on `lpPositions()`.
+
+```ts
+const user = client.user(walletAddress)
+const book = await user.sharePositions({ markets: summaries })
+```
+
+```ts
+Promise<Array<{
+  marketId: Address
+  marketName: string
+  outcomeIndex: number
+  outcomeLabel: string
+  token: Address
+  shares: bigint
+  avgEntryPriceCt: number | null
+  costCollateral: bigint | null
+  priceCt: number | null
+  resolved: boolean
+  winningOutcome: number | null
+  redeemed: boolean
+  realizedPnlCollateral: bigint
+}>>
+```
+
+`UserPositionsParams`: `markets?: Address[] | MarketSummary[]` — filter; summaries also supply labels / tokens / resolution. Inventory still comes from the indexer.
+
+The indexer updates lots from:
+
+| Event | Effect |
+| ----- | ------ |
+| OutcomeAmm `Buy` / `Sell` | Avg-cost trade (buy adds shares + cost; sell reduces and realizes PnL) |
+| Wrapped outcome `Transfer` **to the AMM `router()`** | Share-book **exit** (treated as a sell). There is no resolved-only gate. |
+
+Proceeds on a Router transfer:
+
+| Condition | `collateralAmount` booked |
+| --------- | ------------------------- |
+| Market **resolved** and this outcome **is the winner** | `amount` |
+| Otherwise (open market, loser, or Invalid) | `0` |
+
+That includes post-resolve **redeem** (winner proceeds = amount) and an open-market `market.merge` (Router pulls wrapped tokens; proceeds = 0). A merge that empties an **open** lot is dropped (`shares == 0` and not resolved). After resolve, a full exit stays (`redeemed: true`) so the profile can show Redeemed.
+
+Open lots with `shares == 0` are dropped. After resolve, a fully exited lot stays (`redeemed: true`).
+
+PnL for a remaining lot:
+
+```
+markValue     = shares * priceCt          // 0 or 1 after resolve
+unrealized    = markValue - costCollateral
+pnl           = realizedPnlCollateral + unrealized
+```
+
+## Next
+
+[Get LP positions](/user/get-lp-positions)

@@ -1,0 +1,44 @@
+---
+title: "Get market data"
+description: "Open a market handle and read the protocol summary."
+---
+
+You get a market from `client.market(address)`, not from the package root. `summary` is the protocol object: name, outcomes, tokens, resolved. Metadata is a [separate read](/market/get-metadata).
+
+```ts
+const market = client.market(address)
+const summary = await market.summary()
+// market.summary({ rpcOnly: true })
+```
+
+Indexer first, then chain. No images, no description.
+
+```ts
+Promise<{
+  address: Address
+  marketName: string
+  outcomes: string[]
+  resolver: Address
+  resolverKind: "admin" | "committee"
+  marketAdmin: Address
+  threshold: number | null
+  resolutionMode: number
+  conditionId: `0x${string}`
+  resolved: boolean
+  winningOutcome: number | null
+  wrappedTokens: Address[]
+  numOutcomes: number
+  outcomeStats?: Array<{
+    index: number
+    impliedPct: number | null
+    liquidityCollateral: bigint | null
+    volumeCollateral: bigint | null
+  }>
+} | null>
+```
+
+Other market pages assume you already have `market`.
+
+## Next
+
+[Get market metadata](/market/get-metadata)

@@ -1,17 +1,11 @@
 ---
-title: "Quickstart: React / Next.js"
+title: "Set up with React"
 description: "Wrap the app, then useVoiz().client for everything."
 ---
 
 Wrap once. After that, every screen just asks `useVoiz().client` for a market, a pool, or a user.
 
-## Install
-
-```bash
-npm install @voiz-digital/markets-sdk viem react
-```
-
-You still need a viem `publicClient`. Writes need a `walletClient` or an AA `sendCalls` (Privy, etc.).
+[Install](/install) the SDK, `viem`, and `react`. You still need a viem `publicClient`. Writes need a `walletClient` or an AA `sendCalls` (Privy, etc.).
 
 ## Wrap the app
 
@@ -65,53 +59,8 @@ export function MarketList() {
 
 `useVoiz()` throws outside the provider. That is on purpose.
 
-## Buy something
-
-The pool handle is the named **outcome token** plus `{ market, outcomeIndex }`. That is how the SDK finds this market's OutcomeAmm.
-
-```tsx
-'use client'
-
-import { useVoiz } from '@voiz-digital/markets-sdk/react'
-import type { Address } from 'viem'
-
-export function BuyButton({
-  market,
-  outcomeToken,
-  outcomeIndex,
-  user,
-  amountIn,
-}: {
-  market: Address
-  outcomeToken: Address
-  outcomeIndex: number
-  user: Address
-  amountIn: bigint
-}) {
-  const { client } = useVoiz()
-
-  async function onBuy() {
-    const pool = client.pool(outcomeToken, { market, outcomeIndex })
-    const quote = await pool.quoteTrade({ side: 'buy', amountIn })
-
-    if (!quote.withinRange) {
-      // Use quote.amountIn — that is the max that still quotes
-    }
-
-    await pool.swap({
-      side: 'buy',
-      amountIn: quote.amountIn,
-      minAmountOut: (quote.amountOut * 99n) / 100n,
-      user, // the address that actually holds the tokens (AA smart wallet, not a nested EOA)
-    })
-  }
-
-  return <button onClick={onBuy}>Buy</button>
-}
-```
-
 ## Next
 
 - [How to think about it](/concepts)
-- [Create a market](/guides/create-market)
-- [Trade](/guides/trade)
+- [List markets](/market/list)
+- [VoizProvider and useVoiz](/react)

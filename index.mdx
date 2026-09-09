@@ -1,57 +1,29 @@
 ---
-title: "VOIZ Markets SDK"
-description: "One client. A living market. OutcomeAmm underneath."
+title: "Introduction"
+description: "One client. Then a market, a pool, or a user."
 ---
 
 VOIZ turns a question into a live market. This SDK is how you talk to that market: one client, then a market, a pool, or a user. Viem is underneath. You do not assemble calldata.
 
 ```ts
 client.listMarkets()
-client.market(address)                         // summary, metadata, seed, resolve, LP
-client.pool(outcomeToken, { market, outcomeIndex }) // quote, swap
-client.user(owner)                             // trades, share book, AMM LP shares
+client.market(address)
+client.pool(outcomeToken, { market, outcomeIndex })
+client.user(owner)
 ```
 
-A **market** is the protocol object. **Metadata** (description, resolution rules, images) is a separate **read** on that same market — it is not mixed into the catalog. You **write** it by passing `metadata` into `createMarket`.
-
-Each market has **one** complete-set OutcomeAmm. You trade named outcomes against that AMM. Invalid is an extra CT slot, priced at 0, and is not tradable. LP inventory math: [calculator](/guides/lp-calculator).
-
-## Install
-
-<CodeGroup>
-
-```bash npm
-npm install @voiz-digital/markets-sdk viem
-```
-
-```bash pnpm
-pnpm add @voiz-digital/markets-sdk viem
-```
-
-```bash yarn
-yarn add @voiz-digital/markets-sdk viem
-```
-
-</CodeGroup>
-
-React apps also want `react`, then import `@voiz-digital/markets-sdk/react`.
+A **market** is the protocol object. **Metadata** (description, resolution rules, images) is a separate read — [how to think about it](/concepts). Each market has one OutcomeAmm underneath — [how VOIZ works](/protocol).
 
 ## Next
 
 <CardGroup cols={2}>
-  <Card title="How to think about it" href="/concepts">
-    Client, market, pool, user — and where metadata lives.
+  <Card title="Install" href="/install">
+    Add the SDK and viem.
   </Card>
-  <Card title="How the protocol works" href="/protocol">
-    Complete-set OutcomeAmm, prices, fees, and settlement.
+  <Card title="Set up with React" href="/quickstart-react">
+    Wrap the app, then `useVoiz().client`.
   </Card>
-  <Card title="React / Next.js" href="/quickstart-react">
-    Wrap the app, grab `useVoiz().client`, list and trade.
-  </Card>
-  <Card title="Vanilla viem" href="/quickstart-viem">
-    Scripts and backends: construct the client yourself.
-  </Card>
-  <Card title="Create a market" href="/guides/create-market">
-    Create, describe, then seed.
+  <Card title="Set up with viem" href="/quickstart-viem">
+    Construct the client yourself.
   </Card>
 </CardGroup>

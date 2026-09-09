@@ -1,15 +1,9 @@
 ---
-title: "Quickstart: vanilla viem"
+title: "Set up with viem"
 description: "Same client, no React."
 ---
 
-Scripts, backends, or a UI that is not React — still one `VoizMarketsClient`.
-
-## Install
-
-```bash
-npm install @voiz-digital/markets-sdk viem
-```
+Scripts, backends, or a UI that is not React — still one `VoizMarketsClient`. [Install](/install) the SDK and `viem` first.
 
 ## Create a client
 
@@ -53,64 +47,8 @@ await market.summary()
 await market.metadata() // copy + images, or null
 ```
 
-## Create with metadata
-
-```ts
-const { marketAddress } = await client.createMarket({
-  marketName: 'Will ETH be above 5k?',
-  outcomes: ['Yes', 'No'],
-  resolverKind: 'admin',
-  marketAdmin: account.address,
-  metadata: {
-    description: '…',
-    resolutionCriteria: '…',
-    image: file,
-    outcomeImages: [yesFile, noFile],
-  },
-})
-```
-
-## Seed
-
-Preview collateral with `quoteSeed` (works before the market exists). The write is `market.seed`.
-
-```ts
-import { normalizeOddsBps, quoteSeed } from '@voiz-digital/markets-sdk'
-
-const oddsBps = normalizeOddsBps([50, 50])
-const seedWei = 10n ** 18n
-const { totalCollateral } = quoteSeed({ seedWei, oddsBps })
-
-const market = client.market(marketAddress)
-const summary = await market.summary()
-if (!summary) throw new Error('Market not found')
-
-await market.seed({ seedWei, oddsBps, owner: account.address })
-```
-
-You can pass `outcomeTokens` if you already have them; otherwise the market loads them.
-
-## Quote and swap
-
-```ts
-const outcomeIndex = 0
-const outcomeToken = summary.wrappedTokens[outcomeIndex]!
-const pool = client.pool(outcomeToken, {
-  market: marketAddress,
-  outcomeIndex,
-})
-const quote = await pool.quoteTrade({ side: 'buy', amountIn })
-
-await pool.swap({
-  side: 'buy',
-  amountIn: quote.amountIn,
-  minAmountOut: (quote.amountOut * 99n) / 100n,
-  user: account.address, // token holder = msg.sender (AA smart wallet, not a nested EOA)
-})
-```
-
 ## Next
 
 - [How to think about it](/concepts)
-- [Create a market](/guides/create-market)
-- [Trade](/guides/trade)
+- [List markets](/market/list)
+- [Create a market](/market/create)

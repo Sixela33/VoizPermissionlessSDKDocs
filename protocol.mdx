@@ -32,7 +32,7 @@ p_i  =  (1 / x_i)  /  Σ_j (1 / x_j)
 
 A buy of Yes is not minting a set into the trader's wallet. The AMM splits collateral, pays out Yes, and keeps the rest of the set as inventory. Yes reserve falls; other named reserves rise. Yes's price goes up; the others go down. No separate rebalancer is required.
 
-[How LPs work](/guides/liquidity).
+[How LPs work](/market/liquidity).
 
 ## Who gets paid
 
@@ -45,7 +45,7 @@ A buy of Yes is not minting a set into the trader's wallet. The AMM splits colla
 | Creator | 0.5% | Market creator (cash) |
 | Referrer | 0.2% | Referrer, or treasury if `address(0)` |
 
-LPs do **not** get a USDC stream. Their cut is inventory. Mark-to-market vs cost is [the LP book](/guides/liquidity). Worked numbers: [LP calculator](/guides/lp-calculator).
+LPs do **not** get a USDC stream. Their cut is inventory. Mark-to-market vs cost is [the LP book](/market/liquidity). Worked numbers: [LP calculator](/market/lp-calculator).
 
 ## From spark to settled
 
@@ -64,4 +64,4 @@ Outcome shares: `market.redeem`. LP shares after resolve: `market.redeemLp` (bur
 
 Not one Uniswap pool per outcome. Not PositionManager NFTs. Not a rebalancer that trades complete sets through independent books. Not an order book.
 
-Next: [liquidity](/guides/liquidity) · [trade](/guides/trade)
+Next: [liquidity](/market/liquidity) · [trade](/outcome/quote-trade)

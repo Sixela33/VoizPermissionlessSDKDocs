@@ -1,0 +1,17 @@
+---
+title: "Get balances"
+description: "Read collateral and ERC-20 balances for a wallet."
+---
+
+These live on the client, not on `client.user`. They are live chain reads, not the indexer share or LP books.
+
+```ts
+await client.getCollateralBalance(owner)
+await client.getErc20Balance(token, owner)
+```
+
+Do not mix these with [share positions](/user/get-share-positions) or [LP positions](/user/get-lp-positions). High-level methods already encode approvals; use `erc20Abi` only if you read `balanceOf` / `allowance` yourself.
+
+## Next
+
+[Get pool state](/outcome/get-state)

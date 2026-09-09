@@ -1,0 +1,26 @@
+---
+title: "Get market metrics"
+description: "Liquidity and volume per named outcome."
+---
+
+Indexer `outcome` table first. RPC fallback has `volumeCollateral: null`.
+
+```ts
+const { source, rows } = await market.metrics()
+```
+
+```ts
+// returns OutcomeMetrics
+Promise<{
+  source: "indexer" | "rpc"
+  rows: Array<{
+    index: number
+    liquidity: bigint | null
+    volumeCollateral: bigint | null
+  }>
+}>
+```
+
+## Next
+
+[Seed a market](/market/seed)

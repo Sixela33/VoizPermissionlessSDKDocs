@@ -1,0 +1,46 @@
+---
+title: "Get pool state"
+description: "Whether this named-outcome AMM has pool shares."
+---
+
+A **pool** handle is one named outcome on the market AMM. Invalid is not tradable. Display mids live on [`market.prices()`](/market/prices), not here. Size a trade with [`quoteTrade`](/outcome/quote-trade).
+
+```ts
+const pool = client.pool(outcomeToken, { market: marketAddress, outcomeIndex: 0 })
+```
+
+`pool` requires `{ market, outcomeIndex }`. That is how the SDK finds the market's OutcomeAmm.
+
+Prefer `quoteTrade.spotPrice` / `priceAboveNinetyNineCents` for trade gates. `state` tells you whether the AMM has pool shares (`totalSupply > 0`).
+
+| Field | Live meaning |
+| ----- | ------------ |
+| `status` | `"open"` if `totalSupply > 0`, else `"uninitialized"` |
+| `liquidity` | AMM `totalSupply` (ERC-20 pool shares) |
+| `poolId` | OutcomeAmm address |
+
+```ts
+const { status, liquidity, poolId } = await pool.state()
+```
+
+```ts
+Promise<{
+  status: "uninitialized" | "open"
+  liquidity: bigint
+  poolId: Hex
+}>
+```
+
+```ts
+type PoolStatus = "uninitialized" | "open"
+
+type PoolState = {
+  status: PoolStatus
+  liquidity: bigint
+  poolId: Hex
+}
+```
+
+## Next
+
+[Get spot price](/outcome/get-spot-price)

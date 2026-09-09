@@ -1,0 +1,41 @@
+---
+title: "Get LP positions"
+description: "Indexed OutcomeAmm ERC-20 pool-share lots, one row per market."
+---
+
+`lpPositions()` is one ERC-20 pool-share lot per market (`lpPosition` id = user + market). Soft-fails to `[]`. Rows with `shares == 0` and `realizedPnlCollateral == 0` are omitted.
+
+Do not mix this with [fills](/user/get-trades) or the [share book](/user/get-share-positions).
+
+```ts
+const user = client.user(walletAddress)
+const one = await user.lpPositions({ market: marketAddress })
+const all = await user.lpPositions()
+```
+
+```ts
+Promise<Array<{
+  marketId: Address
+  marketName: string
+  poolId: Address
+  shares: bigint
+  costCollateral: bigint
+  realizedPnlCollateral: bigint
+  currentValueCollateral: bigint | null
+  pnlCollateral: bigint | null
+}>>
+```
+
+`UserLpPositionsParams`: `market?: Address`.
+
+`currentValueCollateral` is the named-outcome basket marked at indexer `priceCt` (0/1 if resolved), pro-rata to `shares / lpSupply`. `pnlCollateral` is realized + unrealized when mark is available.
+
+| Event | Effect |
+| ----- | ------ |
+| `FundingAdded` | Cost += `max(amountsAdded)` (that is `addedFunds`) |
+| `FundingRemoved` | Realize PnL; proceeds = named basket at 1e18 prices (0/1 if resolved) |
+| LP token `Transfer` | Move cost with the shares. Mint/burn (zero address) is ignored — those are already in add/remove. |
+
+## Next
+
+[Get balances](/user/get-balances)

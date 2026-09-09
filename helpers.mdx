@@ -1,9 +1,11 @@
 ---
 title: "Helpers"
-description: "The few things you import beside the client."
+description: "Addresses, ERC-20 ABI, and testnet mint. Odds helpers live on Seed."
 ---
 
 From `@voiz-digital/markets-sdk`. Market / pool / user types come back from factory methods, not from these helpers. `CreateMarketMetadata` is the bag you pass as `createMarket({ metadata })`.
+
+`normalizeOddsBps` and `quoteSeed` live on [Seed a market](/market/seed). Client construction lives on [Set up with viem](/quickstart-viem).
 
 ## getAddresses
 
@@ -20,18 +22,18 @@ Overrides are `Partial<Omit<ChainAddresses, "chainId">>`. Valid keys: `marketFac
 
 Pass the result as `addresses` on the client or `VoizProvider` when you are not on the baked-in Base / Base Sepolia map.
 
-## normalizeOddsBps / quoteSeed
-
-```ts
-const oddsBps = normalizeOddsBps([40, 60]) // bigints summing to 10_000
-const { splitAmount, poolCollateral, totalCollateral } = quoteSeed({
-  seedWei,
-  oddsBps,
-})
-```
-
-`quoteSeed` does not need a market yet. Show `totalCollateral` before `market.seed`.
-
 ## erc20Abi
 
 For the rare path where you read `balanceOf` / `allowance` yourself. High-level methods already encode approvals.
+
+## mintCollateral
+
+Testnet collateral, if the token exposes mint. There is no `client.burn`. First LP is `market.seed`. Later LP is `market.addLiquidity`.
+
+```ts
+await client.mintCollateral({ to, amount })
+```
+
+## Next
+
+[Create a market](/market/create)

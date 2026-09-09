@@ -1,0 +1,28 @@
+---
+title: "Swap"
+description: "Exact-in buy or sell on the market OutcomeAmm."
+---
+
+A **pool** handle is one named outcome on the market AMM. Invalid is not tradable. Display mids live on [`market.prices()`](/market/prices). Quote with [`quoteTrade`](/outcome/quote-trade), then swap that size.
+
+```ts
+const pool = client.pool(outcomeToken, { market: marketAddress, outcomeIndex: 0 })
+const result = await pool.swap({
+  side: 'buy',
+  amountIn: quote.amountIn,
+  minAmountOut: (quote.amountOut * 99n) / 100n, // your slippage
+  user: owner, // token holder = AA smart wallet, not a nested EOA
+})
+```
+
+```ts
+Promise<unknown>
+```
+
+Opaque sender result (same shape as your `sendCalls` / wallet path). Buy is collateral → outcome (`OutcomeAmm.buy`). Sell is the reverse (`OutcomeAmm.sell`).
+
+A buy of one named outcome **does** move the others: the AMM splits a complete set, pays out the bought outcome, and keeps the rest. Named prices stay `p_i ∝ 1/x_i` and still sum to 1. After resolve, swaps revert `Resolved`.
+
+## Next
+
+[Wrap the app](/react)

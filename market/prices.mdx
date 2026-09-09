@@ -1,0 +1,32 @@
+---
+title: "Get market prices"
+description: "Named-outcome display mids. Not a trade quote."
+---
+
+`prices()` is for the UI. Size a trade with [`pool.quoteTrade`](/outcome/quote-trade). Indexer first, then live `OutcomeAmm.prices()`.
+
+Named-outcome display mids (`0 .. numOutcomes-1`). Invalid is **not** in `rows`. Resolved markets return 1/0 via `resolvedDisplayRows` (winner `impliedPct` 100, others 0).
+
+```ts
+const { source, rows } = await market.prices()
+```
+
+```ts
+// returns OutcomePrices
+Promise<{
+  source: "indexer" | "rpc"
+  rows: Array<{
+    index: number
+    label: string
+    token: Address
+    priceCt: number | null
+    impliedPct: number | null
+  }>
+}>
+```
+
+Display prices can lag. Never size a swap from them.
+
+## Next
+
+[Get market price history](/market/price-history)

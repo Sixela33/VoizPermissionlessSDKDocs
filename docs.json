@@ -14,34 +14,69 @@
         "group": "Get started",
         "pages": [
           "index",
-          "concepts",
-          "protocol",
+          "install",
           "quickstart-react",
           "quickstart-viem"
         ]
       },
       {
-        "group": "Guides",
+        "group": "How it works",
         "pages": [
-          "guides/create-market",
-          "guides/seed",
-          "guides/trade",
-          "guides/positions",
-          "guides/liquidity",
-          "guides/lp-calculator",
-          "guides/provide-lp",
-          "guides/resolve"
+          "concepts",
+          "protocol",
+          "market/liquidity"
         ]
       },
       {
-        "group": "API reference",
+        "group": "Market",
         "pages": [
-          "api/client",
-          "api/market",
-          "api/pool",
-          "api/user",
-          "api/react",
-          "api/helpers"
+          "market/create",
+          "market/list",
+          "market/get-data",
+          "market/get-metadata",
+          "market/set-metadata",
+          "market/prices",
+          "market/price-history",
+          "market/metrics",
+          "market/seed",
+          "market/add-liquidity",
+          "market/remove-liquidity",
+          "market/lp-calculator",
+          "market/resolve",
+          "market/pause-trading",
+          "market/merge",
+          "market/redeem",
+          "market/redeem-lp"
+        ]
+      },
+      {
+        "group": "User",
+        "pages": [
+          "user/get-trades",
+          "user/get-share-positions",
+          "user/get-lp-positions",
+          "user/get-balances"
+        ]
+      },
+      {
+        "group": "Outcome",
+        "pages": [
+          "outcome/get-state",
+          "outcome/get-spot-price",
+          "outcome/quote-trade",
+          "outcome/swap"
+        ]
+      },
+      {
+        "group": "React",
+        "pages": [
+          "react"
+        ]
+      },
+      {
+        "group": "Helpers",
+        "pages": [
+          "helpers"
         ]
       }
     ],
@@ -70,5 +105,63 @@
   },
   "footer": {
     "socials": {}
-  }
+  },
+  "redirects": [
+    {
+      "source": "/guides/create-market",
+      "destination": "/market/create"
+    },
+    {
+      "source": "/guides/seed",
+      "destination": "/market/seed"
+    },
+    {
+      "source": "/guides/trade",
+      "destination": "/outcome/quote-trade"
+    },
+    {
+      "source": "/guides/positions",
+      "destination": "/user/get-share-positions"
+    },
+    {
+      "source": "/guides/liquidity",
+      "destination": "/market/liquidity"
+    },
+    {
+      "source": "/guides/lp-calculator",
+      "destination": "/market/lp-calculator"
+    },
+    {
+      "source": "/guides/provide-lp",
+      "destination": "/market/add-liquidity"
+    },
+    {
+      "source": "/guides/resolve",
+      "destination": "/market/resolve"
+    },
+    {
+      "source": "/api/client",
+      "destination": "/quickstart-viem"
+    },
+    {
+      "source": "/api/market",
+      "destination": "/market/get-data"
+    },
+    {
+      "source": "/api/pool",
+      "destination": "/outcome/quote-trade"
+    },
+    {
+      "source": "/api/user",
+      "destination": "/user/get-trades"
+    },
+    {
+      "source": "/api/react",
+      "destination": "/react"
+    },
+    {
+      "source": "/api/helpers",
+      "destination": "/helpers"
+    }
+  ]
 }

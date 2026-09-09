@@ -1,0 +1,21 @@
+---
+title: "Get spot price"
+description: "Live named-outcome mid from OutcomeAmm.prices()."
+---
+
+A **pool** handle is one named outcome on the market AMM. Invalid is not tradable. Display mids for the whole book live on [`market.prices()`](/market/prices). This is the live mid for **this** slot, scaled from 1e18. `null` if the slot has no price.
+
+```ts
+const pool = client.pool(outcomeToken, { market: marketAddress, outcomeIndex: 0 })
+const mid = await pool.spotPrice()
+```
+
+```ts
+number | null
+```
+
+Never size a swap from a display mid. Use [`quoteTrade`](/outcome/quote-trade).
+
+## Next
+
+[Quote a trade](/outcome/quote-trade)

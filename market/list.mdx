@@ -1,0 +1,22 @@
+---
+title: "List markets"
+description: "Catalog addresses and protocol summaries from the indexer, with RPC fallback."
+---
+
+Use these client methods when you need the market catalog. `listMarkets` returns protocol-only `MarketSummary[]` — no pictures, no description. Load images with [`market.metadata()`](/market/get-metadata).
+
+```ts
+const { markets, source, usedFallback } = await client.listMarkets()
+// source: "indexer" | "rpc"
+```
+
+```ts
+await client.listMarketAddresses()
+await client.isMarket(address)
+```
+
+If the indexer is down, `listMarkets` falls back to RPC and returns `{ source: "rpc", usedFallback: true }`. Do not treat an empty catalog as “indexer down”.
+
+## Next
+
+[Get market data](/market/get-data)

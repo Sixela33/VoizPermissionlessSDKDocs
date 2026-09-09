@@ -1,0 +1,27 @@
+---
+title: "Get market metadata"
+description: "Read the off-chain document pointed at by metadataURI."
+---
+
+Pictures and copy are not on `summary` or `listMarkets`. Ask the market for the off-chain document, or `null`.
+
+```ts
+const metadata = await market.metadata()
+```
+
+```ts
+Promise<{
+  version: 1
+  image: string | null
+  outcomeImages: (string | null)[]
+  description: string | null
+  resolutionCriteria: string | null
+  [key: string]: unknown
+} | null>
+```
+
+Want a thumbnail on a catalog card? Call `client.market(row.address).metadata()`. Do not wait for the list to pre-stuff images.
+
+## Next
+
+[Set market metadata](/market/set-metadata)

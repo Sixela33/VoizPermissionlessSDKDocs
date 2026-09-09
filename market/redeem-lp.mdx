@@ -1,0 +1,16 @@
+---
+title: "Redeem LP after resolve"
+description: "Burn pool shares and redeem the basket to collateral."
+---
+
+Resolved only. Burns ERC-20 pool shares and redeems the basket to collateral (same redeem fee). While the market is open, exit with [`removeFunding`](/market/remove-liquidity) instead — there is no 1:1 payout on a single outcome.
+
+```ts
+await market.redeemLp({ shares, owner })
+```
+
+The indexer LP lot marks **pool shares only**. Send-back tokens are a share position — cash those with [`market.redeem`](/market/redeem).
+
+## Next
+
+[Get trades](/user/get-trades)

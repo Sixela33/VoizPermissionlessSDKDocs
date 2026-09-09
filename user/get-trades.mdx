@@ -1,0 +1,41 @@
+---
+title: "Get trades"
+description: "Indexed Buy / Sell fills for a wallet."
+---
+
+You get a user from `client.user(address)`, not from the package root. Indexer reads. Soft-fail to `[]` if Ponder is down. Trading still works off RPC.
+
+Three books. Do not mix them. This page is fills. Shares: [share positions](/user/get-share-positions). LP lots: [LP positions](/user/get-lp-positions).
+
+| Method | Book |
+| ------ | ---- |
+| `trades()` | OutcomeAmm `Buy` / `Sell` fills |
+| `sharePositions()` | Indexer `sharePosition` only (no live ERC-20 overlay) |
+| `lpPositions()` | OutcomeAmm ERC-20 pool shares (one lot per market) |
+
+```ts
+const user = client.user(address)
+const fills = await user.trades({ market, limit: 50 })
+```
+
+```ts
+Promise<Array<{
+  id: string
+  marketId: Address
+  marketName: string
+  outcomeIndex: number
+  outcomeLabel: string
+  side: "buy" | "sell"
+  outcomeAmount: bigint
+  collateralAmount: bigint
+  priceCt: number
+  timestamp: string
+  transactionHash: Hex
+}>>
+```
+
+`UserTradesParams`: `market?: Address`, `limit?: number`. Swap fees live in the indexer `hook_fee` table, not on the trade row.
+
+## Next
+
+[Get share positions](/user/get-share-positions)

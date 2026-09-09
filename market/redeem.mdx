@@ -1,0 +1,22 @@
+---
+title: "Redeem winning shares"
+description: "Cash winning outcome tokens after resolve."
+---
+
+Prefer `market.redeem` when you already have the market handle. `client.redeem({ marketAddress, indexes, amounts, owner })` is the same write if you only have the address.
+
+```ts
+const summary = await market.summary()
+const win = summary!.winningOutcome
+await market.redeem({
+  indexes: [BigInt(win!)],
+  amounts: [amount],
+  owner: yourAddress,
+})
+```
+
+Use this for leftover / send-back named tokens as well as traded shares. LP inventory after resolve is [`redeemLp`](/market/redeem-lp).
+
+## Next
+
+[Redeem LP after resolve](/market/redeem-lp)
