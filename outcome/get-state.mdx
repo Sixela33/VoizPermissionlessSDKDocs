@@ -1,6 +1,6 @@
 ---
 title: "Get pool state"
-description: "Whether this named-outcome AMM has pool shares."
+description: "Whether this market maker already has pool shares."
 ---
 
 You have one answer on the ETH market — Yes — and you want to know whether that market maker has pool shares yet. A pool handle is one named answer on the same market maker, not a second pool. Invalid is not tradable.
@@ -11,9 +11,9 @@ Display mids for the card live on [`market.prices()`](/market/prices). Size a tr
 const pool = client.pool(outcomeToken, { market: marketAddress, outcomeIndex: 0 })
 ```
 
-`pool` requires `{ market, outcomeIndex }`. That is how the SDK finds the market's OutcomeAmm.
+`pool` requires `{ market, outcomeIndex }`. That is how the SDK finds this market’s OutcomeAmm.
 
-Prefer `quoteTrade.spotPrice` / `priceAboveNinetyNineCents` for trade gates. `state` tells you whether the AMM has pool shares (`totalSupply > 0`).
+For trade gates, prefer the spot fields on a quote. `state` only tells you whether the market maker already has pool shares (`totalSupply > 0`).
 
 | Field | Live meaning |
 | ----- | ------------ |

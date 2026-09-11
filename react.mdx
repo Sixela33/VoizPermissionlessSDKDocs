@@ -1,6 +1,6 @@
 ---
 title: "Wrap the app"
-description: "VoizProvider builds the client. Your UI just calls useVoiz()."
+description: "VoizProvider builds the client. Screens then call useVoiz()."
 ---
 
 You are wrapping the React tree once so every screen can use the same client. After that, UI code asks for the client. Import from `@voiz-digital/markets-sdk/react`. Pass a batched sender if you have account abstraction.
@@ -9,7 +9,7 @@ You are wrapping the React tree once so every screen can use the same client. Af
 
 ### VoizProvider
 
-Builds a memoized `VoizMarketsClient` from chain, clients, and an optional custom sender, and puts it in React context.
+The provider builds a memoized client from the chain, the viem clients, and an optional custom sender, then puts that client in React context.
 
 ```tsx
 <VoizProvider
@@ -52,7 +52,7 @@ type VoizProviderProps = {
 
 ### useVoiz
 
-Full Voiz React context. Throws if used outside `<VoizProvider>`. Prefer `const { client } = useVoiz()` for protocol reads and writes.
+Returns the Voiz React context. Throws if you call it outside `<VoizProvider>`. For reads and writes, take the client: `const { client } = useVoiz()`.
 
 ```ts
 const { client, addresses, chainId } = useVoiz()
@@ -102,7 +102,7 @@ type VoizContextValue = {
 
 ### VoizSendCalls
 
-Alias of the SDK `SendCalls` type for React injection.
+React alias of the SDK `SendCalls` type, used when you inject a custom sender.
 
 ```ts
 type VoizSendCalls = (
@@ -113,7 +113,7 @@ type VoizSendCalls = (
 
 ### SendCallsOptions
 
-Options for injected AA / Privy senders (also re-exported from React).
+Options for injected account-abstraction or Privy senders (also re-exported from React).
 
 ```ts
 type SendCallsOptions = {

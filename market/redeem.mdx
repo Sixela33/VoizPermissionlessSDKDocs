@@ -3,9 +3,9 @@ title: "Redeem winning shares"
 description: "Cash winning outcome tokens after resolve."
 ---
 
-The ETH question is settled. You bought Yes, Yes won, and you want USDC. Cashing winning answer tokens is this page. Cashing liquidity inventory is [`redeemLp`](/market/redeem-lp).
+The ETH question is settled. You bought Yes, Yes won, and you want USDC. This page cashes winning answer tokens. To cash liquidity inventory, use [`redeemLp`](/market/redeem-lp).
 
-Prefer `market.redeem` when you already have the market handle. `client.redeem({ marketAddress, indexes, amounts, owner })` is the same write if you only have the address.
+If you already have the market handle, call `market.redeem`. If you only have the address, `client.redeem({ marketAddress, indexes, amounts, owner })` is the same write.
 
 ```ts
 const summary = await market.summary()

@@ -15,7 +15,7 @@ Do not mix the three lists.
 | `sharePositions()` | Indexer `sharePosition` only (no live ERC-20 overlay) |
 | [`lpPositions()`](/user/get-lp-positions) | OutcomeAmm ERC-20 pool shares (one lot per market) |
 
-Inventory, remaining cost, and realized PnL come from that table. Mark `priceCt` comes from indexer `outcome` (0/1 after resolve). Raw fills stay on `trades()`. AMM LP lots stay on `lpPositions()`.
+Inventory, remaining cost, and realized PnL come from that table. Mark price comes from the indexer’s outcome row (0 or 1 after resolve). Raw fills stay on `trades()`. AMM LP lots stay on `lpPositions()`.
 
 ```ts
 const user = client.user(walletAddress)
@@ -40,7 +40,7 @@ Promise<Array<{
 }>>
 ```
 
-`UserPositionsParams`: `markets?: Address[] | MarketSummary[]` — filter; summaries also supply labels / tokens / resolution. Inventory still comes from the indexer.
+You can filter with `markets` (addresses or summaries). Summaries also supply labels, tokens, and resolution. Inventory still comes from the indexer.
 
 The indexer updates lots from:
 

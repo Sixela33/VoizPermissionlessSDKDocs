@@ -5,7 +5,7 @@ description: "Named-outcome display mids. Not a trade quote."
 
 You are showing mids on a catalog card for the ETH question — Yes at 62%, No at 38%. That is not a size you can trade. Size a trade with [`pool.quoteTrade`](/outcome/quote-trade).
 
-Named answers only. Invalid is not in the rows. After resolve, the winner shows 100% and the others 0. Indexer first, then live prices from the market maker.
+Named answers only. Invalid is not in the rows. After resolve, the winner shows 100% and the others 0. The SDK tries the indexer first, then live prices from the market maker.
 
 ```ts
 const { source, rows } = await market.prices()

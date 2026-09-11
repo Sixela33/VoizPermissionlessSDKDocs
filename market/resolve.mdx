@@ -7,7 +7,7 @@ Someone publishes the result of the ETH question: Yes, No, or “this does not c
 
 You are the admin or a committee voter. Check that you are allowed first, then resolve. For “does not count,” use the index after the last named answer. On an admin resolver the SDK calls `reportInvalid`.
 
-Admin markets: you must be the market admin. The SDK passes that as `requiredSigner` so an account-abstraction app can route to the admin key. A plain wallet ignores that hint and signs with whoever is connected. Committee markets: you vote; the threshold finishes it.
+On admin markets, you must be the market admin. The SDK passes that address as `requiredSigner` so an account-abstraction app can route to the admin key. A plain wallet ignores that hint and signs with whoever is connected. On committee markets, you vote; the threshold finishes it.
 
 ```ts
 if (!(await market.canResolve(yourAddress))) {

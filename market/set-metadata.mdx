@@ -3,9 +3,9 @@ title: "Set market metadata"
 description: "Upload files and set metadataURI on an existing market."
 ---
 
-You are attaching pictures and copy to a market that already exists — the ETH question’s image, description, and resolution rules. Prefer passing them when you create. This page is the retry, or the path you skipped on create. Treat the live document as frozen in the product UI.
+You are attaching pictures and copy to a market that already exists — the ETH question’s image, description, and resolution rules. Prefer passing them when you create. This page is the retry, or the path you skipped on create. In the product UI, treat the live document as frozen once it is set.
 
-Files upload through the proxy if you pass a file or blob, then the market’s metadata URI is set. You need the image role (the creator has it).
+If you pass a file or blob, the client uploads through the proxy, then sets the market’s metadata URI. You need permission to set the image (the creator has it).
 
 ```ts
 await market.setMetadata({

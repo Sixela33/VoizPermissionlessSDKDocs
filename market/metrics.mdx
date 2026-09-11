@@ -3,9 +3,9 @@ title: "Get market metrics"
 description: "Liquidity and volume per named outcome."
 ---
 
-You are filling a stats strip: liquidity and volume per answer on the ETH market. This is not the mid on the card, and it is not a trade size. Pool state liquidity is the market maker’s pool-share supply, not this row.
+You are filling a stats strip: liquidity and volume per answer on the ETH market. This is not the mid on the card, and it is not a trade size. The pool’s share supply lives on pool state, not on these rows.
 
-Indexer first. Chain fallback leaves volume null.
+The SDK tries the indexer first. On chain fallback, volume is null.
 
 ```ts
 const { source, rows } = await market.metrics()

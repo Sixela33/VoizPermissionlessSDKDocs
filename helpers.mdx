@@ -1,11 +1,11 @@
 ---
 title: "Helpers"
-description: "Addresses, ERC-20 ABI, and testnet mint. Odds helpers live on Seed."
+description: "Addresses, ERC-20 ABI, and testnet mint. Odds helpers live on the seed page."
 ---
 
 These are addresses, the ERC-20 ABI, and a testnet mint. They are not market objects. Market, answer, and wallet handles come back from the client.
 
-From `@voiz-digital/markets-sdk`. The metadata bag you pass on create is `CreateMarketMetadata`. Odds live on [Seed a market](/market/seed). Client construction lives on [Set up with viem](/quickstart-viem).
+Import them from `@voiz-digital/markets-sdk`. The metadata bag you pass on create is `CreateMarketMetadata`. Odds helpers live on [Seed a market](/market/seed). Client construction lives on [Set up with viem](/quickstart-viem).
 
 ## getAddresses
 
@@ -20,15 +20,15 @@ const staging = getAddresses(chainId, {
 
 Overrides are `Partial<Omit<ChainAddresses, "chainId">>`. Valid keys: `marketFactory`, `adminOracle`, `multisigOracle`, `router`, `collateral`, `conditionalTokens`. There is no `hook` field.
 
-Pass the result as `addresses` on the client or `VoizProvider` when you are not on the baked-in Base / Base Sepolia map.
+Pass the result as `addresses` on the client or `VoizProvider` when you are not on the baked-in Base or Base Sepolia map.
 
 ## erc20Abi
 
-For the rare path where you read `balanceOf` / `allowance` yourself. High-level methods already encode approvals.
+Use this only when you read `balanceOf` or `allowance` yourself. High-level methods already encode approvals.
 
 ## mintCollateral
 
-Testnet collateral, if the token exposes mint. There is no `client.burn`. First LP is `market.seed`. Later LP is `market.addLiquidity`.
+Mints testnet collateral when the token exposes mint. There is no `client.burn`. First liquidity is `market.seed`. Later liquidity is `market.addLiquidity`.
 
 ```ts
 await client.mintCollateral({ to, amount })

@@ -39,7 +39,7 @@ const client = new VoizMarketsClient({
 })
 ```
 
-`walletClient` → one tx per inner call. `sendCalls` → one UserOp for the batch. High-level methods pick whichever you passed.
+With `walletClient`, each inner call is its own transaction. With `sendCalls`, the batch is one UserOp. High-level methods use whichever you passed.
 
 ## Look around
 
@@ -51,10 +51,10 @@ await market.summary()
 await market.metadata() // copy + images, or null
 ```
 
-That read is the catalog. Names and answers come back; pictures do not. A market people can trade is [create](/market/create) then [seed](/market/seed), or first liquidity in the same create call.
+That read is the catalog. Names and answers come back; pictures do not. People can trade only after you [create](/market/create) and [seed](/market/seed), or after you pass the first liquidity in the same create call.
 
 ## Next
 
 - [List markets](/market/list) — browse the catalog
-- [Create a market](/market/create) — go live
+- [Create a market](/market/create) — publish a question
 - [How to think about it](/concepts)

@@ -37,7 +37,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 }
 ```
 
-Prefer `sendCalls` for AA so `seed` / `swap` / `addLiquidity` batch. A plain `walletClient` sends each inner call as its own tx.
+If you use account abstraction, prefer `sendCalls` so seed, swap, and add liquidity can batch into one UserOp. A plain `walletClient` sends each inner call as its own transaction.
 
 ## List markets, then ask one for pictures
 
@@ -59,11 +59,11 @@ export function MarketList() {
 }
 ```
 
-That read is the catalog. Names and answers come back; pictures do not. A market people can trade is [create](/market/create) then [seed](/market/seed), or first liquidity in the same create call. `useVoiz()` throws outside the provider.
+That read is the catalog. Names and answers come back; pictures do not. People can trade only after you [create](/market/create) and [seed](/market/seed), or after you pass the first liquidity in the same create call. `useVoiz()` throws outside the provider.
 
 ## Next
 
 - [List markets](/market/list) — browse the catalog
-- [Create a market](/market/create) — go live
+- [Create a market](/market/create) — publish a question
 - [How to think about it](/concepts)
 - [VoizProvider and useVoiz](/react)

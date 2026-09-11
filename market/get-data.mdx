@@ -3,11 +3,11 @@ title: "Get market data"
 description: "Open a market handle and read the protocol summary."
 ---
 
-You have one market address and need the protocol facts: whether it is resolved, the answers, and the tokens. For the ETH question that is Yes, No, the wrapped tokens, and whether someone has already published the result.
+You have one market address and need the on-chain facts: whether it is resolved, the answers, and the tokens. For the ETH question that is Yes, No, the wrapped tokens, and whether someone has already published the result.
 
 The catalog is [`listMarkets`](/market/list). Pictures are [`metadata()`](/market/get-metadata). Mids for the card are [`prices()`](/market/prices). Liquidity and volume for a stats strip are [`metrics()`](/market/metrics).
 
-You get a market from `client.market(address)`, not from the package root.
+Open a market with `client.market(address)`. There is no market export on the package root.
 
 ```ts
 const market = client.market(address)
@@ -15,7 +15,7 @@ const summary = await market.summary()
 // market.summary({ rpcOnly: true })
 ```
 
-Indexer first, then chain. No images, no description.
+The SDK tries the indexer first, then the chain. This summary has no images and no description.
 
 ```ts
 Promise<{

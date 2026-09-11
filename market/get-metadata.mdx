@@ -3,7 +3,7 @@ title: "Get market metadata"
 description: "Read the off-chain document pointed at by metadataURI."
 ---
 
-You are putting a picture and copy on a card for “Will ETH be above $5,000 at year end?” The catalog list does not include them. Ask the market for the off-chain document, or `null` if none is set.
+You are putting a picture and copy on a card for “Will ETH be above $5,000 at year end?” The catalog list does not include them. Ask the market for the off-chain document — or `null` if none is set.
 
 ```ts
 const metadata = await market.metadata()
@@ -20,7 +20,7 @@ Promise<{
 } | null>
 ```
 
-Want a thumbnail on a catalog card? Call `client.market(row.address).metadata()`. Do not wait for the list to pre-stuff images.
+Want a thumbnail on a catalog card? Call `client.market(row.address).metadata()`. Do not wait for the list to include images.
 
 ## Next
 

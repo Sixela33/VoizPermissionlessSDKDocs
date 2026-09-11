@@ -15,7 +15,7 @@ await client.listMarketAddresses()
 await client.isMarket(address)
 ```
 
-If the indexer is down, `listMarkets` falls back to RPC and returns `{ source: "rpc", usedFallback: true }`. Do not treat an empty catalog as “indexer down”.
+If the indexer is down, `listMarkets` falls back to RPC and returns `{ source: "rpc", usedFallback: true }`. An empty catalog is not the same as “indexer down”.
 
 ## Next
 

@@ -1,11 +1,11 @@
 ---
 title: "Seed a market"
-description: "Preview with quoteSeed, then open the OutcomeAmm with market.seed."
+description: "Put in the first collateral so people can trade."
 ---
 
 The ETH market exists, but nobody can trade until the first collateral is in. You are that first deposit. You are not placing a bet on Yes or No. You are stocking the market maker and choosing how the starting inventory is split.
 
-If you can still fold this into create, pass the deposit there. Otherwise preview the amount, then seed. There is no `client.seedMarket`.
+If you can still do this at create time, pass the deposit there. Otherwise preview the amount, then seed. There is no `client.seedMarket`.
 
 You need the market address, enough collateral for the quoted total, and the connected wallet as owner. Odds are percents. A helper turns them into basis points that sum to 10_000 (each answer 1%–99%). Invalid has no opening weight.
 
@@ -29,7 +29,7 @@ await market.seed({
 })
 ```
 
-That is **one** `sendCalls` batch: collateral approve + `addFunding`. On AA, one UserOp. On a plain wallet, still one signature per inner call.
+That is **one** `sendCalls` batch: collateral approve plus `addFunding`. With account abstraction, that is one UserOp. With a plain wallet, you still sign once per inner call.
 
 `quoteSeed` does not need a market yet. It returns a total equal to the deposit (one complete-set deposit). Later liquidity is [`market.addLiquidity`](/market/add-liquidity), which joins current proportions with an empty hint.
 

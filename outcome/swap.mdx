@@ -19,9 +19,9 @@ const result = await pool.swap({
 Promise<unknown>
 ```
 
-Opaque sender result (same shape as your `sendCalls` / wallet path). Buy is collateral → outcome (`OutcomeAmm.buy`). Sell is the reverse (`OutcomeAmm.sell`).
+The return value matches whatever your `sendCalls` or wallet path returns. A buy turns collateral into that answer (`OutcomeAmm.buy`). A sell is the reverse (`OutcomeAmm.sell`).
 
-A buy of Yes **does** move No: the market maker splits a complete set, pays you Yes, and keeps the rest. Named prices still sum to 1. After resolve, swaps revert `Resolved`.
+A buy of Yes **does** move No: the market maker splits a complete set, pays you Yes, and keeps the rest. Named prices still sum to 1. After resolve, swaps revert with `Resolved`.
 
 ## Next
 

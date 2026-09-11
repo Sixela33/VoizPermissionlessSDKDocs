@@ -9,7 +9,7 @@ You get a user from `client.user(address)`, not from the package root. If the in
 
 Do not mix the three lists. Remaining Yes and No: [share positions](/user/get-share-positions). Pool shares: [LP positions](/user/get-lp-positions).
 
-| Method | Book |
+| Method | What it is |
 | ------ | ---- |
 | `trades()` | OutcomeAmm `Buy` / `Sell` fills |
 | `sharePositions()` | Indexer `sharePosition` only (no live ERC-20 overlay) |
@@ -36,7 +36,7 @@ Promise<Array<{
 }>>
 ```
 
-`UserTradesParams`: `market?: Address`, `limit?: number`. Swap fees live in the indexer `hook_fee` table, not on the trade row.
+Optional filters: `market` and `limit`. Swap fees live in the indexer `hook_fee` table, not on the trade row.
 
 ## Next
 

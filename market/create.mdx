@@ -3,9 +3,9 @@ title: "Create a market"
 description: "Deploy a market and optionally publish metadata and seed in the same flow."
 ---
 
-You are publishing a question on chain. For example: “Will ETH be above $5,000 at year end?” with Yes and No. You get a market address back. Pictures, copy, and the first liquidity can go in the same flow. If you skip the first deposit, the market exists but nobody can trade yet. It does not wait to be listed.
+You are publishing a question on chain. For example: “Will ETH be above $5,000 at year end?” with Yes and No. You get a market address back. Pictures, copy, and the first liquidity can go in the same flow. If you skip the first deposit, the market exists but nobody can trade yet. There is no separate listing step.
 
-Pass a metadata bag with copy or images and the client uploads files, then sets the metadata URI. Empty metadata is skipped. Pass a deposit and opening mix to create-and-seed on the factory (approve the **factory**). Omit the deposit for create-only.
+If you pass metadata with copy or images, the client uploads the files and sets the metadata URI. Empty metadata is skipped. If you pass a deposit and an opening mix, create and seed run on the factory in one flow (approve the **factory**). Omit the deposit for create-only.
 
 You need a client that can send and a wallet with gas. Admin markets need an admin. Committee markets need voters and a threshold. Images can be a file, a blob, or a public URL.
 
@@ -41,9 +41,9 @@ Promise<{
 }>
 ```
 
-If metadata is present but the new address cannot be parsed from the receipt, it throws instead of leaving a silent unpublished market. Skip metadata if you have nothing to publish. After the market is live, treat the document as frozen in the product UI. `market.setMetadata` still exists for a retry if the upload failed after create.
+If metadata is present but the new address cannot be parsed from the receipt, it throws instead of leaving a silent unpublished market. Skip metadata if you have nothing to publish. Once the market is live, treat that document as frozen in the product UI. `market.setMetadata` still exists for a retry if the upload failed after create.
 
-This is the one write that must live on the client — there is no market yet.
+This is the one write that must live on the client — there is no market handle yet.
 
 ## Next
 

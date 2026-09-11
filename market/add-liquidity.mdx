@@ -19,9 +19,9 @@ await market.addLiquidity({
 })
 ```
 
-Later liquidity uses an empty distribution hint and joins **current** proportions. Tiny amounts fail with “Amount too small…”.
+Later liquidity uses an empty distribution hint and joins the pool’s **current** proportions. Tiny amounts fail with “Amount too small…”.
 
-You receive ERC-20 pool shares, one lot per market. Find them with [`client.user(addr).lpPositions`](/user/get-lp-positions).
+You receive ERC-20 pool shares — one lot per market. Find them with [`client.user(addr).lpPositions`](/user/get-lp-positions).
 
 ## Next
 

@@ -3,7 +3,7 @@ title: "How to think about it"
 description: "One question, one market maker. The SDK hangs off the client."
 ---
 
-This page is the SDK map, not a second protocol essay. How prices, Invalid, liquidity, and settlement work is in [How VOIZ works](/protocol).
+This page maps the SDK. How prices, Invalid, liquidity, and settlement work is in [How VOIZ works](/protocol).
 
 You never construct a market by hand. You build one client, then ask it for markets that already exist, for one market, for one answer, or for one wallet.
 
@@ -37,7 +37,7 @@ The indexer catalog omits Invalid from the token list. A chain snapshot includes
 
 ## Market vs metadata
 
-`summary` / `listMarkets` are protocol facts: name, outcomes, tokens, resolved or not.
+The protocol summary and the catalog list give you the on-chain facts: name, answers, tokens, and whether the market is resolved.
 
 Pictures and copy are **not** on that object. Ask the market:
 
@@ -46,9 +46,9 @@ const summary = await market.summary()
 const metadata = await market.metadata() // { description, resolutionCriteria, image, outcomeImages } | null
 ```
 
-Want a thumbnail on a catalog card? Call `client.market(row.address).metadata()`. Do not wait for the list to pre-stuff images.
+Want a thumbnail on a catalog card? Call `client.market(row.address).metadata()`. Do not wait for the list to include images.
 
-The usual **write** is `client.createMarket({ …, metadata })`. The client deploys, then uploads files and sets `metadataURI`. `market.setMetadata` is there if you ever need a retry.
+When you create a market, pass metadata in that call. The client deploys, then uploads files and sets the metadata URI. Use `market.setMetadata` only if you need a retry.
 
 ## Collateral and outcomes
 
@@ -81,13 +81,13 @@ Display prices can lag a bit. Never size a swap from them.
 
 ## How writes go out
 
-Pass `sendCalls` (Privy / AA: many inner calls, one UserOp) or a `walletClient` (each inner call is its own tx).
+Pass `sendCalls` when you use Privy or account abstraction (many inner calls, one UserOp), or a `walletClient` (each inner call is its own transaction).
 
-`requiredSigner` is a hint for an AA sender that has more than one key. A normal wallet ignores it and signs with the connected account.
+`requiredSigner` is a hint for an account-abstraction sender that has more than one key. A normal wallet ignores it and signs with the connected account.
 
 ## Next
 
-If you came here to go live: [create a market](/market/create), then [seed](/market/seed) unless the first deposit already rode along.
+If you came here to publish a market: [create](/market/create), then [seed](/market/seed) unless the first deposit already rode along.
 
 - [How liquidity works](/market/liquidity) — LP deep dive
 - [How VOIZ works](/protocol) — the full protocol

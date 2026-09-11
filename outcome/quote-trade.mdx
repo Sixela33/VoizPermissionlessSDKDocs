@@ -15,7 +15,7 @@ const quote = await pool.quoteTrade({
 })
 ```
 
-Exact-in quote matching `swap` sides: buy = collateral → outcome; sell = the reverse. May return a capped size when the request cannot fill (`withinRange: false`). If it capped you, swap `quote.amountIn`, not the original number.
+This is an exact-in quote with the same sides as swap: buy turns collateral into that answer; sell is the reverse. The quote may return a capped size when the full request cannot fill (`withinRange: false`). If it capped you, swap `quote.amountIn`, not the original number.
 
 ```ts
 Promise<{
