@@ -3,9 +3,11 @@ title: "Get trades"
 description: "Indexed Buy / Sell fills for a wallet."
 ---
 
-You get a user from `client.user(address)`, not from the package root. Indexer reads. Soft-fail to `[]` if Ponder is down. Trading still works off RPC.
+You want the fill tape for a wallet that bought Yes on the ETH market. These are buy and sell events. They are not remaining shares and not liquidity lots.
 
-Three books. Do not mix them. This page is fills. Shares: [share positions](/user/get-share-positions). LP lots: [LP positions](/user/get-lp-positions).
+You get a user from `client.user(address)`, not from the package root. If the indexer is down, you get an empty list. Trading still works off the chain.
+
+Do not mix the three lists. Remaining Yes and No: [share positions](/user/get-share-positions). Pool shares: [LP positions](/user/get-lp-positions).
 
 | Method | Book |
 | ------ | ---- |

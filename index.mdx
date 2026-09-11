@@ -1,9 +1,13 @@
 ---
 title: "Introduction"
-description: "One client. Then a market, a pool, or a user."
+description: "Create and trade prediction markets from TypeScript."
 ---
 
-VOIZ turns a question into a live market. This SDK is how you talk to that market: one client, then a market, a pool, or a user. Viem is underneath. You do not assemble calldata.
+This SDK is how you create a prediction market and how you trade it.
+
+A market is a question with named answers. For example: “Will ETH be above $5,000 at year end?” with Yes and No. People buy and sell those answers with a collateral token (USDC on Base and Polygon). When the result is published, the winning answer is worth 1 unit of collateral and the others are worth 0. If the question is ruled not to count, a third outcome called Invalid pays instead.
+
+You do not assemble calldata. You build one client, then ask it for markets that already exist, for one market, for one answer to quote or trade, or for one wallet’s positions.
 
 ```ts
 client.listMarkets()
@@ -12,18 +16,22 @@ client.pool(outcomeToken, { market, outcomeIndex })
 client.user(owner)
 ```
 
-A **market** is the protocol object. **Metadata** (description, resolution rules, images) is a separate read — [how to think about it](/concepts). Each market has one OutcomeAmm underneath — [how VOIZ works](/protocol).
+`market` is the question. `pool` is one answer on that market’s market maker — not a second pool. `user` is a wallet. Copy, images, and resolution rules are metadata. They are not on the catalog; you read them from the market.
+
+How prices, liquidity, Invalid, and settlement work: [How VOIZ works](/protocol).
 
 ## Next
 
 <CardGroup cols={2}>
   <Card title="Install" href="/install">
-    Add the SDK and viem.
+    Add the SDK and viem first.
   </Card>
   <Card title="Set up with React" href="/quickstart-react">
-    Wrap the app, then `useVoiz().client`.
+    Pick this if you have a React tree: wrap once, then `useVoiz().client`.
   </Card>
   <Card title="Set up with viem" href="/quickstart-viem">
-    Construct the client yourself.
+    Pick this if you construct the client yourself (scripts, backends, non-React UI).
   </Card>
 </CardGroup>
+
+After you have a client: [list existing markets](/market/list), or [create one](/market/create) and add the first liquidity so people can trade.

@@ -3,9 +3,9 @@ title: "Quote a trade"
 description: "Exact-in quote against the AMM. Never size from display prices."
 ---
 
-You trade **one named outcome against collateral** on the market's OutcomeAmm. The handle is the outcome token plus `{ market, outcomeIndex }`. Invalid is not tradable. Display mids live on [`market.prices()`](/market/prices). `quoteTrade` is for the button.
+You are buying Yes on “Will ETH be above $5,000 at year end?” Size comes from a quote, not from the mid on the card. Invalid is not tradable. Display mids live on [`market.prices()`](/market/prices).
 
-You need a seeded market, collateral (buy) or shares (sell), and `summary.wrappedTokens[index]` for a **named** outcome.
+You need a market people can already trade, collateral (to buy) or shares (to sell), and the token for a named answer. If the quote cannot fill the full size, swap the capped amount, not the original number.
 
 ```ts
 const pool = client.pool(outcomeToken, { market: marketAddress, outcomeIndex: 0 })

@@ -3,7 +3,7 @@ title: "Get market price history"
 description: "Chart points from the indexer. Soft-fails to an empty list."
 ---
 
-Use this for charts. Soft-fails to `[]` if the indexer is down.
+You are drawing a chart of past mids for “Will ETH be above $5,000 at year end?” That is history, not a size you can trade. Live mids for the card are [`prices()`](/market/prices). One live slot is [`spotPrice()`](/outcome/get-spot-price). If the indexer is down, you get an empty list.
 
 ```ts
 await market.priceHistory({ from: Math.floor(Date.now() / 1000) - 86400 })

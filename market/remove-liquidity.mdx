@@ -1,9 +1,9 @@
 ---
 title: "Remove liquidity"
-description: "Burn pool shares while the market is open and take the token basket."
+description: "Take inventory out while the market is still open."
 ---
 
-Open-market LP exit is `market.removeFunding`. You get a basket of every slot, then [`merge`](/market/merge) complete sets if you want collateral. After resolve, use [`redeemLp`](/market/redeem-lp) instead.
+You are taking inventory out while the ETH market is still open (including paused). You burn pool shares and receive a basket of every answer, including Invalid — not cash. Then [`merge`](/market/merge) complete sets if you want collateral. After the result is published, cash the pool shares with [`redeemLp`](/market/redeem-lp) instead.
 
 ```ts
 await market.removeFunding({ shares, owner })
@@ -13,4 +13,5 @@ Find the lot with [`user.lpPositions`](/user/get-lp-positions). Send-back / left
 
 ## Next
 
-[LP calculator](/market/lp-calculator)
+- [Merge complete sets](/market/merge) — open cash-out
+- [Redeem LP after resolve](/market/redeem-lp) after resolve

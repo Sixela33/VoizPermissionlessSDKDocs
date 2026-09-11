@@ -1,35 +1,39 @@
 ---
 title: "How liquidity works"
-description: "You are the book. One OutcomeAmm, ERC-20 pool shares, trading stops at resolve."
+description: "Put up inventory on a question. ERC-20 pool shares. Trading stops at resolve."
 ---
 
-On VOIZ, LPs **are** the market. You are not picking Yes or No. You deposit collateral into the market's OutcomeAmm so the community can trade through you.
+You are putting up inventory so people can trade “Will ETH be above $5,000 at year end?” You are not buying Yes or No.
 
-You hold a mix of outcome tokens (the book). Protocol / creator / referrer fees are **cash out of the trade**. The LP cut (default 0.8%) stays in the pool as extra complete sets. Your P&L is inventory marked at AMM (or 0/1) prices versus cost — not `deposit × odds × win/lose`. Worked numbers (100 collateral, 70/30, buy 40): [LP calculator](/market/lp-calculator).
+You deposit collateral (USDC on Base and Polygon) into that question’s market maker. The contract holds a mix of Yes, No, and Invalid. Traders buy and sell through that inventory. Protocol, creator, and referrer fees leave the trade as cash. The liquidity-provider cut (default 0.8%) stays in the pool as extra complete sets.
+
+Your profit and loss is that inventory marked at the market maker’s prices (or 0 or 1 after the result) versus what you put in. It is not deposit times odds times win or lose. Worked numbers (100 collateral, 70/30, buy 40): [LP calculator](/market/lp-calculator).
 
 Not financial advice. Size only what you can lose.
 
 ## What you actually mint
 
-`credits` (or `seedWei` on first LP) is one collateral number. The AMM pulls it, splits a complete set, keeps a slice of each slot as inventory, and mints ERC-20 pool shares to you.
+You pass one collateral amount. The market maker pulls it, splits a complete set, keeps a slice of each answer as inventory, and mints ERC-20 pool shares to you. Those shares are a claim on the whole inventory — not an NFT and not a perpetual.
+
+In code, first liquidity is `market.seed`. Later liquidity is `market.addLiquidity`. Both call `addFunding`.
 
 ```
-credits C
+collateral C
 └── addFunding(C, hint)
-    ├── AMM keeps outcome tokens (the book)
-    ├── leftover tokens of lighter slots return to you
-    └── you receive pool shares (vAMM)
+    ├── market maker keeps answer tokens (inventory)
+    ├── leftover tokens of lighter answers return to you
+    └── you receive ERC-20 pool shares
 ```
 
 | | Seed (`market.seed`) | Later LP (`market.addLiquidity`) |
 | --- | --- | --- |
 | Contract | `addFunding` | `addFunding` |
-| Hint | Named-outcome odds, Invalid = 0 | Empty — join current proportions |
+| Hint | Named-answer odds, Invalid = 0 | Empty — join current proportions |
 | Shares minted | `C` | `C * supply / max(reserves)` |
 
-Invalid is part of the complete set and sits in the AMM. It is not tradable and always prices at 0.
+Invalid is part of the complete set and sits in the market maker. It is not tradable and always prices at 0.
 
-On a skewed book, later LP binds on the heaviest reserve. Lighter slots send leftover outcome tokens back to the funder.
+On a skewed pool, later liquidity binds on the heaviest reserve. Lighter answers send leftover tokens back to you.
 
 ## What you earn
 
@@ -46,7 +50,7 @@ P&L  ≈  realized on burns  +  mark(remaining shares)  −  remaining cost
 mark = shares / supply × Σ_named (reserve_i × priceCt_i)
 ```
 
-A book that resolves quickly can show almost no trading and a large inventory term. The halt at resolve protects remaining inventory from 0/1 arb.
+A market that resolves quickly can show almost no trading and a large inventory term. The halt at resolve protects remaining inventory from 0/1 arb.
 
 ## Risks
 
@@ -54,28 +58,28 @@ A book that resolves quickly can show almost no trading and a large inventory te
 
 After payouts are set, every named share is worth **exactly `1` or `0` collateral**. If swaps kept running:
 
-- **Winner still priced below 1** — buy it from the AMM, redeem at 1.
-- **Loser still priced above 0** — sell worthless shares into the AMM, take collateral out.
+- **Winner still priced below 1** — buy it from the market maker, redeem at 1.
+- **Loser still priced above 0** — sell worthless shares into the market maker, take collateral out.
 
 `buy` / `sell` therefore revert `Resolved` once Conditional Tokens has a payout denominator. Fee income from traders stops with them.
 
-Fee income for the protocol only exists **between seed and resolve**. A market that resolves quickly can pay almost no volume relative to the inventory you posted — but leaving the AMM open would be worse: the inventory itself would be picked off.
+Fee income for the protocol only exists **between the first deposit and resolve**. A market that resolves quickly can pay almost no volume relative to the inventory you posted — but leaving the market maker open would be worse: the inventory itself would be picked off.
 
 ### Inventory while the market is open
 
-Across-outcome LP is how you market-make the whole book without picking Yes or No. It is **not delta-neutral**. As implied probability moves, you hold more of the outcome the market is dumping. You are the other side of every trader.
+Across-answer liquidity is how you market-make the whole question without picking Yes or No. It is **not delta-neutral**. As implied probability moves, you hold more of the answer traders are selling. You are the other side of every trade.
 
 ### Even join vs live odds
 
-Later `addLiquidity` joins **current** reserve proportions. It does not re-apply your original seed odds.
+Later `addLiquidity` joins **current** reserve proportions. It does not re-apply your original opening mix.
 
 ### Idle Invalid
 
-The complete-set mint always prints Invalid. It never trades. Unwinding a full set later means you need the named outcomes back (from `removeFunding`, from trading, or from leftover send-backs).
+The complete-set mint always prints Invalid. It never trades. Unwinding a full set later means you need the named answers back (from `removeFunding`, from trading, or from leftover send-backs).
 
 ### Operational
 
-Approvals, factory version, and AMM clone all have to match. Tiny `credits` revert (`mintAmount == 0` or dust). Contracts, oracles, and resolution can fail.
+Approvals, factory version, and market-maker clone all have to match. Tiny deposits revert (`mintAmount == 0` or dust). Contracts, oracles, and resolution can fail.
 
 This is not financial advice. Size only what you can lose.
 
@@ -86,7 +90,7 @@ This is not financial advice. Size only what you can lose.
 3. Resolved: `market.redeemLp({ shares, owner })` — burn shares, redeem the basket to collateral (same redeem fee).
 4. Send-back / leftover named tokens: `market.redeem` as share positions.
 
-`redeemLp` only works after resolve. While open there is no 1:1 payout on a single outcome.
+`redeemLp` only works after resolve. While open there is no 1:1 payout on a single answer.
 
 ## In the SDK
 

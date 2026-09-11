@@ -3,7 +3,7 @@ title: "Pause trading"
 description: "Creator one-way pause. Buy, sell, and addFunding stop."
 ---
 
-The creator can pause once (no unpause). `buy` / `sell` / `addFunding` stop. `removeFunding` and redeem stay open.
+You are the creator. You need to freeze trading on the ETH question before the result is known. Pause is one-way. It is not the result, and you cannot undo it. Buys, sells, and new liquidity stop. Existing liquidity can still be withdrawn. Redeem stays open.
 
 ```ts
 await market.pauseTrading({ owner })
@@ -11,4 +11,5 @@ await market.pauseTrading({ owner })
 
 ## Next
 
-[Merge complete sets](/market/merge)
+- [Resolve a market](/market/resolve)
+- Open LP exit: [Remove liquidity](/market/remove-liquidity)

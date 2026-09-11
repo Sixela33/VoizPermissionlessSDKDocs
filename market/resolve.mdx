@@ -3,7 +3,11 @@ title: "Resolve a market"
 description: "Publish the winning outcome. Trading stops on purpose."
 ---
 
-Call `canResolve` first, then `resolve`. Admin markets: you must be `marketAdmin`. The SDK passes that as `requiredSigner` so an AA app can route to the admin key. A plain wallet ignores that hint and signs with whoever is connected. Committee markets: you vote; `threshold` votes finish it.
+Someone publishes the result of the ETH question: Yes, No, or “this does not count.” Trading stops on purpose. After payouts are set, the winner is worth 1 and the others are 0.
+
+You are the admin or a committee voter. Check that you are allowed first, then resolve. For “does not count,” use the index after the last named answer. On an admin resolver the SDK calls `reportInvalid`.
+
+Admin markets: you must be the market admin. The SDK passes that as `requiredSigner` so an account-abstraction app can route to the admin key. A plain wallet ignores that hint and signs with whoever is connected. Committee markets: you vote; the threshold finishes it.
 
 ```ts
 if (!(await market.canResolve(yourAddress))) {
@@ -17,4 +21,5 @@ After resolve, [`market.prices()`](/market/prices) shows the winner at 100%. `bu
 
 ## Next
 
-[Pause trading](/market/pause-trading)
+- [Redeem winning shares](/market/redeem)
+- [Redeem LP after resolve](/market/redeem-lp) if pool shares remain

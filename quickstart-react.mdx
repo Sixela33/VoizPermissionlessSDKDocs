@@ -3,9 +3,11 @@ title: "Set up with React"
 description: "Wrap the app, then useVoiz().client for everything."
 ---
 
-Wrap once. After that, every screen just asks `useVoiz().client` for a market, a pool, or a user.
+You are wiring the client in a React tree.
 
-[Install](/install) the SDK, `viem`, and `react`. You still need a viem `publicClient`. Writes need a `walletClient` or an AA `sendCalls` (Privy, etc.).
+Wrap the app once. After that, screens ask the client for a catalog of questions, for one market, for one answer, or for one wallet. [Install](/install) the SDK, `viem`, and `react` first. Reads need a chain id and a public client. Writes need a wallet, or a batched sender if you use account abstraction. Leave addresses unset unless you deployed your own.
+
+Then you can list existing questions, or create “Will ETH be above $5,000 at year end?” with Yes and No.
 
 ## Wrap the app
 
@@ -35,7 +37,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
 }
 ```
 
-Skip `addresses` unless you redeployed — they come from `chainId`. Prefer `sendCalls` for AA so `seed` / `swap` / `addLiquidity` batch. A plain `walletClient` sends each inner call as its own tx.
+Prefer `sendCalls` for AA so `seed` / `swap` / `addLiquidity` batch. A plain `walletClient` sends each inner call as its own tx.
 
 ## List markets, then ask one for pictures
 
@@ -57,10 +59,11 @@ export function MarketList() {
 }
 ```
 
-`useVoiz()` throws outside the provider. That is on purpose.
+That read is the catalog. Names and answers come back; pictures do not. A market people can trade is [create](/market/create) then [seed](/market/seed), or first liquidity in the same create call. `useVoiz()` throws outside the provider.
 
 ## Next
 
+- [List markets](/market/list) — browse the catalog
+- [Create a market](/market/create) — go live
 - [How to think about it](/concepts)
-- [List markets](/market/list)
 - [VoizProvider and useVoiz](/react)

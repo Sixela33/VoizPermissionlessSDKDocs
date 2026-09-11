@@ -3,11 +3,13 @@ title: "LP calculator"
 description: "Worked arithmetic for first LP: inventory, idle resolve, then informed flow."
 ---
 
+You deposited 100 USDC as first liquidity on “Will ETH be above $5,000 at year end?” This page walks the arithmetic: how inventory is split, what happens if nobody trades, and what happens if someone buys 40 of the winner.
+
+The favorite’s full stack stays in the pool. Less likely answers refund the extra tokens to your wallet. You are not placing a 70/30 bet. Do not use deposit times odds times win or lose.
+
 Interactive inputs live in [`lp-calc.html`](/lp-calc.html) (open that file). This page is the same math written out.
 
 Deposit `C = 100` collateral. Fees: protocol 1% + creator 0.5% + referrer 0.2% cash, LP 0.8% stays in the pool. Last-LP redeem therefore nets **98.3** of each winner token (cash cuts 1.7%, LP slice stays with you).
-
-Do **not** use `C × p × (+1 if win else −1)`. That is a bet.
 
 ## 1. First LP split
 
@@ -70,9 +72,9 @@ They pay collateral, take the **wrong** outcome out. The AMM still splits almost
 
 Same 100 seed, 40 bought of the loser: you keep ~their stake minus cash fees. Pool vs wallet only changes *where* the winner tokens sit.
 
-That is the house: right traders extract the winner from the pool; wrong traders donate complete sets and leave with trash.
+Traders who are right take winner tokens out of the pool. Traders who are wrong leave complete sets behind and take the losing answer.
 
-## 4. What the product books
+## 4. What the product records
 
 ```
 cost     = addedFunds
@@ -84,4 +86,5 @@ Later LP and mixed flow are different paths. The interactive form is [`lp-calc.h
 
 ## Next
 
-[Resolve a market](/market/resolve)
+- [Add liquidity](/market/add-liquidity)
+- [Remove liquidity](/market/remove-liquidity)

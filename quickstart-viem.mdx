@@ -3,7 +3,11 @@ title: "Set up with viem"
 description: "Same client, no React."
 ---
 
-Scripts, backends, or a UI that is not React — still one `VoizMarketsClient`. [Install](/install) the SDK and `viem` first.
+You are wiring the client yourself — scripts, backends, or a UI that is not React.
+
+[Install](/install) the SDK and `viem` first. Reads need a public client. Writes need a wallet. A private key is for scripts and backends. A non-React UI should pass the connected wallet. Leave addresses unset unless you deployed your own.
+
+Then you can list existing questions, or create “Will ETH be above $5,000 at year end?” with Yes and No.
 
 ## Create a client
 
@@ -47,8 +51,10 @@ await market.summary()
 await market.metadata() // copy + images, or null
 ```
 
+That read is the catalog. Names and answers come back; pictures do not. A market people can trade is [create](/market/create) then [seed](/market/seed), or first liquidity in the same create call.
+
 ## Next
 
+- [List markets](/market/list) — browse the catalog
+- [Create a market](/market/create) — go live
 - [How to think about it](/concepts)
-- [List markets](/market/list)
-- [Create a market](/market/create)

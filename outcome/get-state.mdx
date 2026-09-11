@@ -3,7 +3,9 @@ title: "Get pool state"
 description: "Whether this named-outcome AMM has pool shares."
 ---
 
-A **pool** handle is one named outcome on the market AMM. Invalid is not tradable. Display mids live on [`market.prices()`](/market/prices), not here. Size a trade with [`quoteTrade`](/outcome/quote-trade).
+You have one answer on the ETH market — Yes — and you want to know whether that market maker has pool shares yet. A pool handle is one named answer on the same market maker, not a second pool. Invalid is not tradable.
+
+Display mids for the card live on [`market.prices()`](/market/prices). Size a trade with [`quoteTrade`](/outcome/quote-trade).
 
 ```ts
 const pool = client.pool(outcomeToken, { market: marketAddress, outcomeIndex: 0 })

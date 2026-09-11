@@ -3,7 +3,7 @@ title: "Get market metadata"
 description: "Read the off-chain document pointed at by metadataURI."
 ---
 
-Pictures and copy are not on `summary` or `listMarkets`. Ask the market for the off-chain document, or `null`.
+You are putting a picture and copy on a card for “Will ETH be above $5,000 at year end?” The catalog list does not include them. Ask the market for the off-chain document, or `null` if none is set.
 
 ```ts
 const metadata = await market.metadata()
@@ -24,4 +24,6 @@ Want a thumbnail on a catalog card? Call `client.market(row.address).metadata()`
 
 ## Next
 
-[Set market metadata](/market/set-metadata)
+- [Set market metadata](/market/set-metadata) — only if you are the creator and the document is missing
+- [Seed a market](/market/seed) if nobody can trade yet
+- [Quote a trade](/outcome/quote-trade) if people can already trade

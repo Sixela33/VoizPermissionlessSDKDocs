@@ -3,9 +3,9 @@ title: "Get LP positions"
 description: "Indexed OutcomeAmm ERC-20 pool-share lots, one row per market."
 ---
 
-`lpPositions()` is one ERC-20 pool-share lot per market (`lpPosition` id = user + market). Soft-fails to `[]`. Rows with `shares == 0` and `realizedPnlCollateral == 0` are omitted.
+You want pool shares for a wallet that put up inventory on the ETH market. One lot per market. It is not remaining Yes or No, and it is not the fill tape.
 
-Do not mix this with [fills](/user/get-trades) or the [share book](/user/get-share-positions).
+If the indexer is down, you get an empty list. Rows with no shares and no realized PnL are omitted. Do not mix this with [fills](/user/get-trades) or [remaining shares](/user/get-share-positions).
 
 ```ts
 const user = client.user(walletAddress)

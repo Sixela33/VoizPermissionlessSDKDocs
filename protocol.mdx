@@ -1,67 +1,125 @@
 ---
 title: "How VOIZ works"
-description: "A living market: one complete-set OutcomeAmm per question."
+description: "What a VOIZ market is, how trades and liquidity work, and how it settles."
 ---
 
-VOIZ is a prediction market your community can feel. Under the hood it is two pieces:
+This page is the mechanism: how a VOIZ market prices answers, takes liquidity, and settles.
 
-1. **A complete set** — one unit of collateral is always named outcomes + Invalid.
-2. **One OutcomeAmm per market** — LPs *are* the book. Named prices satisfy `p_i ∝ 1/x_i`.
+A market is a question with named answers. For example: “Will ETH be above $5,000 at year end?” with Yes and No. People buy and sell those answers with a collateral token (USDC on Base and Polygon). When the result is published, the winning answer is worth 1 unit of collateral and the others are worth 0. If the question is ruled not to count, Invalid pays instead.
 
-You launch a question. People trade. Settlement stays on-chain.
+Two facts sit under that:
 
-## The peg
+1. **A complete set.** One unit of collateral can always be split into one token of every answer, including Invalid, and those tokens can be merged back into collateral.
+2. **One market maker per question.** Liquidity providers deposit collateral. The contract holds the answer tokens and quotes prices from that inventory. VOIZ calls this contract OutcomeAmm. There is one per market.
+
+Pictures, descriptions, and resolution rules are metadata. They are not this object. Read them separately.
+
+## Complete sets and Invalid
+
+Take a Yes / No market. One unit of collateral splits into one Yes, one No, and one Invalid. If you hold all three, you can merge them back into one unit of collateral at any time, including while the market is still open.
 
 ```
 1 collateral  ⇄  Yes + No + … + Invalid
 ```
 
-Split and merge anytime you hold the full set. After resolve, the winner is 1 and the rest are 0. Until then, that identity is true on Conditional Tokens even as AMM mids move.
+**Invalid** is the outcome for “this question does not count.” It is part of every complete set so the split and merge always close. Traders cannot buy or sell it. Its price on the market maker is always zero, and it is not included in the named prices that sum to 1.
 
-## The book
+If the question is ruled invalid, Invalid pays 1 and the named answers pay 0. Until then it just sits in the inventory.
 
-Each market clones **one** OutcomeAmm. Named outcomes trade against that AMM. Invalid is held for split/merge. On-chain `OutcomeAmm.prices()[numOutcomes]` is always 0; `market.prices().rows` does not include that slot. Buy/sell of Invalid reverts.
+After resolve, the winner is 1 and everything else is 0. Until then, the complete-set identity still holds even while the market maker’s prices move.
 
-Spot prices (1e18) over named outcomes:
+## How a trade works
+
+There is one market maker for the whole question, not one per answer. Buying Yes does not mint a full set into the trader’s wallet.
+
+The contract splits collateral into Yes, No, and Invalid, pays the trader Yes, and keeps the rest as inventory. The market maker now holds less Yes, so Yes is more expensive. It holds more of the other named answers, so those get cheaper. One buy moves every named price. Nothing else has to rebalance the pool.
+
+Selling is the reverse: the trader returns Yes, and the contract pays collateral while putting Yes back into inventory.
+
+In code you talk to one answer at a time through a **pool** handle. That handle is not a second market maker. It is how you quote and swap that answer on the same contract.
+
+## Prices
+
+Named answer prices sum to 1. Invalid is not in that sum.
+
+The price of each named answer is inverse to how much of it the market maker is holding. Scarce inventory is expensive:
 
 ```
 p_i  =  (1 / x_i)  /  Σ_j (1 / x_j)
 ```
 
-`x_i` is the AMM's reserve of outcome `i`. Named prices sum to 1. Invalid is not in that sum.
+`x_i` is the market maker’s reserve of answer `i`. On-chain, the extra Invalid slot is always priced at 0. The SDK’s display prices list named answers only.
 
-A buy of Yes is not minting a set into the trader's wallet. The AMM splits collateral, pays out Yes, and keeps the rest of the set as inventory. Yes reserve falls; other named reserves rise. Yes's price goes up; the others go down. No separate rebalancer is required.
+Those display prices can lag. They are for showing a mid, not for sizing a trade. Size a trade with a quote, then send that size.
 
-[How LPs work](/market/liquidity).
+## Starting the market
 
-## Who gets paid
+You create the question on chain. Until someone deposits the first collateral, there is nothing to trade against.
 
-`totalFeeBips = 100` protocol + `lpBips` + `creatorBips` + `referrerBips`. Variable cuts (`lp + creator + referrer`) cap at **150 bps**. SDK defaults: LP 80, creator 50, referrer 20. Same schedule on buy, sell, and redeem.
+That first deposit does two jobs. It stocks the market maker, and it sets how the inventory is split across named answers. More of the favorite stays in the pool so the market maker can sell it. Extra tokens of the less likely answers are returned to the depositor. Invalid is kept in full and is not given an opening weight. You are not placing a bet by choosing that mix. You are deciding how the starting inventory is split.
 
-| Cut | Default | Who |
+If you pass the deposit when you create the market, both happen in one factory transaction (approve the factory). If you omit it, the market exists and you add the first liquidity afterwards.
+
+Later liquidity providers join whatever mix the pool already has. They do not set a new opening mix.
+
+## Liquidity providers
+
+A liquidity provider is not picking Yes or No. You deposit collateral. The contract splits a complete set, keeps a mix of answer tokens, and mints you ERC-20 pool shares. Those shares are a claim on the whole inventory. They are not an NFT and not a perpetual.
+
+On a skewed pool, later deposits bind on the heaviest reserve. Lighter answers send leftover tokens back to you. Those returned tokens are a share position, not your pool-share lot.
+
+While the market is open, leaving means burning pool shares for a basket of every answer, including Invalid. Merge a complete set if you want collateral back. After resolve, you burn the pool shares and redeem the basket at 0 or 1.
+
+This is not delta-neutral. As prices move, you hold more of the answer traders are selling. You are the other side of every trade.
+
+Worked numbers: [LP calculator](/market/lp-calculator). How to call it: [How liquidity works](/market/liquidity).
+
+## Fees
+
+The same schedule applies to buy, sell, and redeem. Protocol is 1%. The other cuts are configurable and together cap at 1.5%. SDK defaults:
+
+| Cut | Default | Who receives it |
 | --- | --- | --- |
-| Protocol | 1.0% | Treasury (cash) |
-| LP | 0.8% | Stays in the pool as extra complete sets |
-| Creator | 0.5% | Market creator (cash) |
-| Referrer | 0.2% | Referrer, or treasury if `address(0)` |
+| Protocol | 1.0% | Treasury, as cash |
+| Liquidity providers | 0.8% | Stays in the pool as extra complete sets |
+| Creator | 0.5% | Market creator, as cash |
+| Referrer | 0.2% | Referrer, or treasury if none is set |
 
-LPs do **not** get a USDC stream. Their cut is inventory. Mark-to-market vs cost is [the LP book](/market/liquidity). Worked numbers: [LP calculator](/market/lp-calculator).
+Liquidity providers do not receive a cash stream. Their cut is more inventory. Mark it against cost; do not treat the opening mix as a win/lose bet.
 
-## From spark to settled
+## Pause, resolve, and redeem
 
-1. **Create** — `createMarket`. Pass `seedWei` + `oddsBps` for create-and-seed in one factory tx (approve the factory). Omit `seedWei` for an empty book.
-2. **Seed** — if you did not seed on create: `market.seed` (`addFunding` with opening odds, Invalid = 0).
-3. **Trade** — people `buy` / `sell` one named outcome at a time.
-4. **Resolve** — payouts are published. Named shares are now 0 or 1.
+The creator can pause trading once, before resolve. Buys, sells, and new liquidity stop. Existing liquidity can still be withdrawn. Pause is not the result of the question, and it cannot be undone.
 
-**Trading stops at resolve on purpose.** `buy` / `sell` revert `Resolved` once Conditional Tokens has a payout denominator. A live curve quoting 0.62 while redemption is 1 or 0 is free arb on LP inventory.
+When the answer is known, the admin publishes it, or a committee reaches its threshold. For Invalid, the outcome index is the number of named answers (the SDK’s admin path calls `reportInvalid`). Check that you are allowed to resolve first.
 
-After resolve, `/chart` pins the winner at 100 and losers at 0. Periodic price snapshots skip resolved markets. Creators can one-way `pauseTrading` (OpenZeppelin `Pausable`) before resolve; buy/sell/addFunding stop, `removeFunding` and redeem stay open.
+Trading stops at resolve on purpose. After payouts are set, every named share is worth exactly 1 or 0. If the market maker still quoted 0.62 next to a 1-or-0 redeem, traders would buy the cheap winner or dump the expensive loser and empty the inventory. Buys and sells revert once the result is on chain.
 
-Outcome shares: `market.redeem`. LP shares after resolve: `market.redeemLp` (burns pool shares, redeems the basket to collateral). Open-market LP exit is still `removeFunding` (token basket, not cash).
+Then:
+
+- Named winning tokens → redeem for collateral.
+- Pool shares → redeem the basket for collateral.
+- Leftover named tokens from liquidity (the ones sent back when you deposited) → redeem as shares, not as pool shares.
+
+While the market is still open there is no 1-for-1 payout on a single answer. Open liquidity exit is the token basket, then merge if you hold a complete set.
+
+Fee income from traders only exists between the first deposit and resolve. A market that settles quickly may do almost no volume relative to the inventory you posted. Leaving the market maker open after resolve would be worse: the inventory itself would be picked off.
 
 ## What this is not
 
-Not one Uniswap pool per outcome. Not PositionManager NFTs. Not a rebalancer that trades complete sets through independent books. Not an order book.
+Not one Uniswap pool per answer. Not Position Manager NFTs. Not a rebalancer that trades complete sets through independent pools. Not an order book.
 
-Next: [liquidity](/market/liquidity) · [trade](/outcome/quote-trade)
+## In the SDK
+
+```ts
+await client.createMarket({ /* question, answers, optional first deposit */ })
+await market.seed({ /* first deposit, if you did not pass it on create */ })
+await client.pool(token, { market, outcomeIndex }).quoteTrade({ side, amountIn })
+await market.resolve({ outcomeIndex })
+await market.redeem({ outcomeIndex, amount })
+await market.redeemLp({ shares, owner })
+```
+
+## Next
+
+[Create a market](/market/create) · [How liquidity works](/market/liquidity) · [Quote a trade](/outcome/quote-trade)

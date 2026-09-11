@@ -1,13 +1,13 @@
 ---
 title: "Add liquidity"
-description: "Join the open book with one collateral amount via market.addLiquidity."
+description: "Put up more inventory after people can already trade."
 ---
 
-You put in `credits`. The SDK calls `OutcomeAmm.addFunding` on this market's AMM. That is `market.addLiquidity` after the book is open.
+You are not betting Yes on the ETH market. You are putting up more inventory after people can already trade. Later deposits join the mix the pool already has. They do not set a new opening split.
 
-First LP is [`market.seed`](/market/seed) — same contract, with a distribution hint from the odds (Invalid weight 0). For inventory, fees, and resolution, read [How liquidity works](/market/liquidity) first.
+First liquidity is [`market.seed`](/market/seed) — same contract, with an opening mix (Invalid weight 0). For inventory, fees, and resolution, read [How liquidity works](/market/liquidity) first.
 
-You need a seeded market (`seedStatus()` is `"seeded"` when AMM `totalSupply > 0`), enough collateral, and `owner` as the connected wallet.
+You need a market that already has pool shares, enough collateral, and the connected wallet as owner.
 
 ```ts
 const credits = parseUnits('50', 18)
@@ -19,9 +19,9 @@ await market.addLiquidity({
 })
 ```
 
-Later LP uses an empty distribution hint and joins **current** proportions. Tiny `credits` fail with “Amount too small…”.
+Later liquidity uses an empty distribution hint and joins **current** proportions. Tiny amounts fail with “Amount too small…”.
 
-You receive ERC-20 pool shares (`vAMM`), one lot per market. Find them with [`client.user(addr).lpPositions`](/user/get-lp-positions).
+You receive ERC-20 pool shares, one lot per market. Find them with [`client.user(addr).lpPositions`](/user/get-lp-positions).
 
 ## Next
 

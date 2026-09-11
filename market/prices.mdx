@@ -3,9 +3,9 @@ title: "Get market prices"
 description: "Named-outcome display mids. Not a trade quote."
 ---
 
-`prices()` is for the UI. Size a trade with [`pool.quoteTrade`](/outcome/quote-trade). Indexer first, then live `OutcomeAmm.prices()`.
+You are showing mids on a catalog card for the ETH question — Yes at 62%, No at 38%. That is not a size you can trade. Size a trade with [`pool.quoteTrade`](/outcome/quote-trade).
 
-Named-outcome display mids (`0 .. numOutcomes-1`). Invalid is **not** in `rows`. Resolved markets return 1/0 via `resolvedDisplayRows` (winner `impliedPct` 100, others 0).
+Named answers only. Invalid is not in the rows. After resolve, the winner shows 100% and the others 0. Indexer first, then live prices from the market maker.
 
 ```ts
 const { source, rows } = await market.prices()

@@ -3,7 +3,7 @@ title: "Redeem LP after resolve"
 description: "Burn pool shares and redeem the basket to collateral."
 ---
 
-Resolved only. Burns ERC-20 pool shares and redeems the basket to collateral (same redeem fee). While the market is open, exit with [`removeFunding`](/market/remove-liquidity) instead — there is no 1:1 payout on a single outcome.
+The ETH question is settled. You provided liquidity and now you want the inventory cashed to USDC. Burn the pool shares and redeem the basket (same redeem fee). While the market is open, exit with [`removeFunding`](/market/remove-liquidity) instead — there is no 1-for-1 payout on a single answer. Send-back named tokens are share positions, not this lot.
 
 ```ts
 await market.redeemLp({ shares, owner })
@@ -13,4 +13,4 @@ The indexer LP lot marks **pool shares only**. Send-back tokens are a share posi
 
 ## Next
 
-[Get trades](/user/get-trades)
+This is the end of this market's life. Leftover named tokens: [Redeem winning shares](/market/redeem)

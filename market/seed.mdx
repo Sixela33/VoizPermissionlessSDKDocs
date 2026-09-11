@@ -3,11 +3,11 @@ title: "Seed a market"
 description: "Preview with quoteSeed, then open the OutcomeAmm with market.seed."
 ---
 
-Seeding is first LP: `OutcomeAmm.addFunding` with named-outcome odds (Invalid weight 0). Prefer `createMarket({ seedWei, oddsBps })` when you want create+seed in one factory tx. Otherwise `quoteSeed` then `market.seed`. There is no `client.seedMarket`.
+The ETH market exists, but nobody can trade until the first collateral is in. You are that first deposit. You are not placing a bet on Yes or No. You are stocking the market maker and choosing how the starting inventory is split.
 
-You need the market address, enough collateral for `quoteSeed(…).totalCollateral`, and `owner` as the connected wallet.
+If you can still fold this into create, pass the deposit there. Otherwise preview the amount, then seed. There is no `client.seedMarket`.
 
-Odds are percents. `normalizeOddsBps` turns them into basis points that sum to 10_000 (each outcome 1%–99%).
+You need the market address, enough collateral for the quoted total, and the connected wallet as owner. Odds are percents. A helper turns them into basis points that sum to 10_000 (each answer 1%–99%). Invalid has no opening weight.
 
 ```ts
 import { normalizeOddsBps, quoteSeed } from '@voiz-digital/markets-sdk'
@@ -31,7 +31,7 @@ await market.seed({
 
 That is **one** `sendCalls` batch: collateral approve + `addFunding`. On AA, one UserOp. On a plain wallet, still one signature per inner call.
 
-`quoteSeed` does not need a market yet. It returns `totalCollateral === seedWei` (one complete-set deposit). Later LP is [`market.addLiquidity`](/market/add-liquidity), which joins current proportions with an empty hint.
+`quoteSeed` does not need a market yet. It returns a total equal to the deposit (one complete-set deposit). Later liquidity is [`market.addLiquidity`](/market/add-liquidity), which joins current proportions with an empty hint.
 
 ```ts
 await market.seedStatus() // 'none' | 'seeded'  (AMM totalSupply > 0)
@@ -39,4 +39,5 @@ await market.seedStatus() // 'none' | 'seeded'  (AMM totalSupply > 0)
 
 ## Next
 
-[How liquidity works](/market/liquidity)
+- [Quote a trade](/outcome/quote-trade)
+- Later: [Add liquidity](/market/add-liquidity) · [How liquidity works](/market/liquidity)

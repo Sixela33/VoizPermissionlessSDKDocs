@@ -3,7 +3,7 @@ title: "Wrap the app"
 description: "VoizProvider builds the client. Your UI just calls useVoiz()."
 ---
 
-Import from `@voiz-digital/markets-sdk/react`. Pass `sendCalls` for AA. After that, screens only need `const { client } = useVoiz()`.
+You are wrapping the React tree once so every screen can use the same client. After that, UI code asks for the client. Import from `@voiz-digital/markets-sdk/react`. Pass a batched sender if you have account abstraction.
 
 ## Provider
 

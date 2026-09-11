@@ -3,7 +3,7 @@ title: "List markets"
 description: "Catalog addresses and protocol summaries from the indexer, with RPC fallback."
 ---
 
-Use these client methods when you need the market catalog. `listMarkets` returns protocol-only `MarketSummary[]` — no pictures, no description. Load images with [`market.metadata()`](/market/get-metadata).
+You are drawing a catalog of questions. For each row you get the name and the answers — for example “Will ETH be above $5,000 at year end?” with Yes and No. Pictures and descriptions are not on this list. Load those with [`market.metadata()`](/market/get-metadata).
 
 ```ts
 const { markets, source, usedFallback } = await client.listMarkets()

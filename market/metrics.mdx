@@ -3,7 +3,9 @@ title: "Get market metrics"
 description: "Liquidity and volume per named outcome."
 ---
 
-Indexer `outcome` table first. RPC fallback has `volumeCollateral: null`.
+You are filling a stats strip: liquidity and volume per answer on the ETH market. This is not the mid on the card, and it is not a trade size. Pool state liquidity is the market maker’s pool-share supply, not this row.
+
+Indexer first. Chain fallback leaves volume null.
 
 ```ts
 const { source, rows } = await market.metrics()
@@ -23,4 +25,5 @@ Promise<{
 
 ## Next
 
-[Seed a market](/market/seed)
+- [Seed a market](/market/seed) if nobody can trade yet
+- [Quote a trade](/outcome/quote-trade) otherwise

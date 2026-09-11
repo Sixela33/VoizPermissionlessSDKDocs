@@ -42,9 +42,9 @@
           "market/add-liquidity",
           "market/remove-liquidity",
           "market/lp-calculator",
-          "market/resolve",
           "market/pause-trading",
           "market/merge",
+          "market/resolve",
           "market/redeem",
           "market/redeem-lp"
         ]

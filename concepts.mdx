@@ -1,9 +1,13 @@
 ---
 title: "How to think about it"
-description: "Client → market / pool / user. Metadata lives on the market."
+description: "One question, one market maker. The SDK hangs off the client."
 ---
 
-If you remember one thing: **everything hangs off the client.** You never `new VoizMarket(…)`. You say `client.market(addr)`.
+This page is the SDK map, not a second protocol essay. How prices, Invalid, liquidity, and settlement work is in [How VOIZ works](/protocol).
+
+You never construct a market by hand. You build one client, then ask it for markets that already exist, for one market, for one answer, or for one wallet.
+
+A catalog card for “Will ETH be above $5,000 at year end?” shows the name and Yes / No from the list. Pictures and copy are metadata. They are not on that list. The indexer is for catalogs, charts, and portfolios. The chain is for a size you can trade.
 
 ```ts
 const client = useVoiz().client // or new VoizMarketsClient({ … })
@@ -12,6 +16,24 @@ const market = client.market(addr)
 const pool = client.pool(outcomeToken, { market: addr, outcomeIndex: 0 })
 const user = client.user(owner)
 ```
+
+## Pool is one answer, not a second market
+
+A pool handle is one named answer on the same market maker. It is not a second pool. Trades go through that handle, not the market address. Buying Yes on the ETH question moves No as well.
+
+In code:
+
+```ts
+client.pool(outcomeToken, { market, outcomeIndex })
+```
+
+## Invalid
+
+Invalid is the outcome for “this question does not count.” It is minted whenever a complete set is split, so split and merge always close. It is not a tradable named answer. Display prices list Yes and No only. Buy and sell of Invalid revert.
+
+If the question is ruled not to count, Invalid pays 1. Resolve with the index after the last named answer. On an admin resolver the SDK calls `reportInvalid`.
+
+The indexer catalog omits Invalid from the token list. A chain snapshot includes it. Use the chain snapshot when you need the Invalid token for merge.
 
 ## Market vs metadata
 
@@ -30,13 +52,9 @@ The usual **write** is `client.createMarket({ …, metadata })`. The client depl
 
 ## Collateral and outcomes
 
-Each market has one collateral token (`client.addresses.collateral`), several named outcome ERC-20s (`wrappedTokens[0..numOutcomes-1]`), and Invalid at index `numOutcomes`.
+Each market has one collateral token (USDC on Base and Polygon), a token per named answer, and Invalid on chain.
 
-There is **one** OutcomeAmm per market. A **pool** handle is one named outcome on that AMM: `client.pool(outcomeToken, { market, outcomeIndex })`. Trades go through that handle, not the market address.
-
-Invalid is minted in complete-set splits so CT accounting closes. It is not a tradable named outcome. `market.prices().rows` is **named outcomes only** (`0 .. numOutcomes-1`). Invalid lives at `summary.wrappedTokens[numOutcomes]`. On-chain, `OutcomeAmm.prices()[numOutcomes]` is 0; that extra slot is not on the SDK rows.
-
-Seeding and later LP both call `addFunding` on that single AMM.
+First liquidity and later liquidity both add funding on that single market maker.
 
 ## Indexer vs chain
 
@@ -51,18 +69,25 @@ Do not treat an empty catalog as “indexer down”. That is the portfolio/histo
 
 Display prices can lag a bit. Never size a swap from them.
 
-`user.sharePositions()` is the indexer share book only. It does not overlay live ERC-20 balances.
+`user.sharePositions()` is the indexer share list only. It does not overlay live ERC-20 balances.
 
 ## Quotes vs writes
 
-**Seed:** `quoteSeed({ seedWei, oddsBps })` is pure math (`totalCollateral === seedWei`). `market.seed(…)` is first LP: `addFunding` with named-outcome odds and Invalid weight 0.
+**Seed:** the first deposit opens trading. It is not a bet. Invalid has no opening weight. In code, `quoteSeed` restates the deposit amount and `market.seed` is that first liquidity add. Later [`addLiquidity`](/market/add-liquidity) joins the mix the pool already has.
 
-**Trade:** `pool.quoteTrade({ side, amountIn })` may cap you (`withinRange: false`). `pool.swap` sends that size. `buy` is collateral → outcome; `sell` is the reverse. You apply slippage to `minAmountOut`.
+**Trade:** quote a size, then swap that size. A quote may cap you. Buy is collateral to an answer; sell is the reverse. You apply slippage to the minimum you will accept.
 
-**LP:** `market.addLiquidity({ credits, owner })` — later `addFunding` joining current proportions. Mechanics and risk: [How liquidity provision works](/market/liquidity).
+**LP:** later liquidity is more inventory, not a bet on Yes. Mechanics and risk: [How liquidity provision works](/market/liquidity).
 
 ## How writes go out
 
 Pass `sendCalls` (Privy / AA: many inner calls, one UserOp) or a `walletClient` (each inner call is its own tx).
 
 `requiredSigner` is a hint for an AA sender that has more than one key. A normal wallet ignores it and signs with the connected account.
+
+## Next
+
+If you came here to go live: [create a market](/market/create), then [seed](/market/seed) unless the first deposit already rode along.
+
+- [How liquidity works](/market/liquidity) — LP deep dive
+- [How VOIZ works](/protocol) — the full protocol

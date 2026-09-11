@@ -3,7 +3,7 @@ title: "Get spot price"
 description: "Live named-outcome mid from OutcomeAmm.prices()."
 ---
 
-A **pool** handle is one named outcome on the market AMM. Invalid is not tradable. Display mids for the whole book live on [`market.prices()`](/market/prices). This is the live mid for **this** slot, scaled from 1e18. `null` if the slot has no price.
+You want the live mid for Yes on the ETH market, from the chain. The card of all answers is [`market.prices()`](/market/prices). This is one slot, scaled from 1e18, or `null` if that slot has no price. Invalid is not tradable.
 
 ```ts
 const pool = client.pool(outcomeToken, { market: marketAddress, outcomeIndex: 0 })

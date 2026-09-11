@@ -1,13 +1,15 @@
 ---
 title: "Get share positions"
-description: "Indexer share book: net shares and average entry per outcome."
+description: "Remaining Yes and No for a wallet, from the indexer."
 ---
 
-`sharePositions()` is indexer `sharePosition` only. There is no live ERC-20 overlay. Soft-fails to `[]` if the indexer is down.
+You want remaining Yes and No for a wallet that traded the ETH question. This is the indexer share list. It is not live token balances in the wallet and not liquidity lots.
 
-Three books. Do not mix them.
+There is no live ERC-20 overlay. If the indexer is down, you get an empty list.
 
-| Method | Book |
+Do not mix the three lists.
+
+| Method | What it is |
 | ------ | ---- |
 | [`trades()`](/user/get-trades) | OutcomeAmm `Buy` / `Sell` fills |
 | `sharePositions()` | Indexer `sharePosition` only (no live ERC-20 overlay) |
@@ -17,7 +19,7 @@ Inventory, remaining cost, and realized PnL come from that table. Mark `priceCt`
 
 ```ts
 const user = client.user(walletAddress)
-const book = await user.sharePositions({ markets: summaries })
+const positions = await user.sharePositions({ markets: summaries })
 ```
 
 ```ts
@@ -45,7 +47,7 @@ The indexer updates lots from:
 | Event | Effect |
 | ----- | ------ |
 | OutcomeAmm `Buy` / `Sell` | Avg-cost trade (buy adds shares + cost; sell reduces and realizes PnL) |
-| Wrapped outcome `Transfer` **to the AMM `router()`** | Share-book **exit** (treated as a sell). There is no resolved-only gate. |
+| Wrapped outcome `Transfer` **to the AMM `router()`** | Share **exit** (treated as a sell). There is no resolved-only gate. |
 
 Proceeds on a Router transfer:
 

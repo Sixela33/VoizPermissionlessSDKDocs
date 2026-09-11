@@ -3,6 +3,10 @@ title: "Install"
 description: "Add the SDK and viem. React apps also import the React entry."
 ---
 
+You are adding the package so the rest of these docs can run.
+
+The SDK talks to a chain. You still need an RPC when you build the client. Reads work with that alone. Writes need a wallet, and they spend the market’s collateral — USDC on Base and Polygon for a question like “Will ETH be above $5,000 at year end?”
+
 <CodeGroup>
 
 ```bash npm
@@ -21,7 +25,11 @@ yarn add @voiz-digital/markets-sdk viem
 
 React apps also want `react`, then import `@voiz-digital/markets-sdk/react`.
 
+In code, the RPC is a `publicClient`. Writes also need a `walletClient` or `sendCalls`.
+
 ## Next
+
+Pick React if you have a React tree. Otherwise construct the client with viem.
 
 - [Set up with React](/quickstart-react)
 - [Set up with viem](/quickstart-viem)
